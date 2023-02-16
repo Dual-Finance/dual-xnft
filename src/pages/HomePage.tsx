@@ -1,25 +1,72 @@
-import useGso from "../hooks/useGso";
+import { useQuery } from "@tanstack/react-query";
+import { Suspense } from "react";
+import { FaChevronRight } from "react-icons/fa";
+import {
+  Await,
+  Link,
+  useLoaderData,
+  defer,
+} from "react-router-dom";
+import { queryClient } from "../client";
+import { Card } from "../components/Card";
+import { Loading } from "../components/Loading";
+import { fetchGso, GsoParams } from "../hooks/useGso";
+import { getConnection, prettyFormatPrice } from "../utils";
+
+export async function loader() {
+  return defer({
+    gso: queryClient.fetchQuery({
+      queryKey: ["gso"],
+      queryFn: () => fetchGso(getConnection()),
+    }),
+  });
+}
 
 export function HomePage() {
-  const { gso } = useGso();
+  const data = useLoaderData() as any;
   return (
-    <div>
-      <div role="list" className="list-none">
-        {gso.map((g) => {
+    <div className="h-full">
+      <Suspense fallback={<Loading />}>
+        <Await resolve={data.gso}>
+          <GsoList />
+        </Await>
+      </Suspense>
+    </div>
+  );
+}
+
+function GsoList() {
+  const { data: gso } = useQuery<GsoParams[]>({ queryKey: ["gso"] });
+  return (
+    <div role="list">
+      {gso &&
+        gso.map((g) => {
+          const { symbol, image } = g.metadata;
           return (
-            <div
-              key={g.soName}
-              role="listitem"
-              className="w-full p-4 rounded bg-black border-2 border-gray-500"
-            >
-              <div className="flex justify-between items-center">
-                <img src={g.metadata.image} className="w-8 h-8" />
-                <span>{g.soName}</span>
-              </div>
-            </div>
+            <Link to={`/gso/${g.soName}`} key={g.soName}>
+              <Card>
+                <div
+                  role="listitem"
+                  className="flex gap-2 items-center text-white"
+                >
+                  <img
+                    src={image}
+                    alt={`${symbol} icon`}
+                    className="w-10 h-10"
+                  />
+                  <div className="flex-1 text-left">
+                    <p className="text-lg">{symbol.toUpperCase()}</p>
+                    <p className="text-sm">
+                      Strike: {prettyFormatPrice(g.strike, 8)}
+                    </p>
+                    <p className="text-sm">Expires: {g.expiration}</p>
+                  </div>
+                  <FaChevronRight />
+                </div>
+              </Card>
+            </Link>
           );
         })}
-      </div>
     </div>
   );
 }

@@ -1,4 +1,37 @@
-import { PublicKey } from "@solana/web3.js";
+import { Connection, PublicKey } from "@solana/web3.js";
+
+export function parseNumber(str: string, precision: number) {
+  const inputStr = str;
+  if (
+    !Number.isNaN(parseFloat(inputStr)) ||
+    inputStr === "." ||
+    inputStr === ""
+  ) {
+    return str;
+  }
+  if (parseFloat(inputStr) < 0) {
+    return "0"
+  }
+  const numberSegments = inputStr.split(".");
+  if (numberSegments.length !== 2) {
+    return;
+  }
+  const maxTokenDecimals = precision.toString().length - 1;
+  const inputDecimals = numberSegments[1].length;
+  const decimals = Math.min(inputDecimals, maxTokenDecimals);
+  const sanitizedValue = Number(
+    Math.floor(parseFloat(inputStr) * 10 ** decimals) / 10 ** decimals
+  ).toFixed(decimals);
+  return sanitizedValue;
+}
+
+export const prettyFormatPrice = (price: number, decimals = 4): string => {
+  return `$${(price >= 0.1 ? price.toFixed(2) : price.toFixed(decimals)).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`;
+};
+
+export function getConnection() {
+  return new Connection(import.meta.env.VITE_RPC_URL_MAINNET, "confirmed");
+}
 
 export function msToTimeLeft(duration: number) {
   const minutes = Math.floor((duration / (1000 * 60)) % 60);
@@ -36,9 +69,9 @@ export function parseGsoState(buf: Buffer) {
   const baseVaultBump = Number(buf.readUInt8(35));
   const strike = Number(readBigUInt64LE(buf, 36));
   const soNameLengthBytes = Number(buf.readUInt8(44));
-  // @ts-ignore
   const soName = String.fromCharCode.apply(
     String,
+    // @ts-ignore
     buf.slice(48, 48 + soNameLengthBytes)
   );
   const soStateOffset = 48 + soNameLengthBytes;
