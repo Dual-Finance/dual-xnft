@@ -1,16 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { Suspense } from "react";
 import { FaChevronRight } from "react-icons/fa";
-import {
-  Await,
-  Link,
-  useLoaderData,
-  defer,
-} from "react-router-dom";
+import { Await, Link, useLoaderData, defer } from "react-router-dom";
 import { queryClient } from "../client";
 import { Card } from "../components/Card";
 import { Loading } from "../components/Loading";
-import { fetchGso, GsoParams } from "../hooks/useGso";
+import { fetchGso } from "../hooks/useGso";
+import { GsoParams } from "../types";
 import { getConnection, prettyFormatPrice } from "../utils";
 
 export async function loader() {
@@ -52,7 +48,7 @@ function GsoList() {
                   <img
                     src={image}
                     alt={`${symbol} icon`}
-                    className="w-10 h-10"
+                    className="w-10 h-10 rounded-full"
                   />
                   <div className="flex-1 text-left">
                     <p className="text-lg">{symbol.toUpperCase()}</p>

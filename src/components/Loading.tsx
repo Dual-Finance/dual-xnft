@@ -1,7 +1,7 @@
 export function Loading() {
   return (
-    <div className="flex justify-center items-center h-screen">
-      <div className="w-16 h-16 border-4 border-orange-400 rounded-full animate-spin"></div>
+    <div className="flex justify-center items-center h-full max-h-screen">
+      <div className="spinner-border animate-spin w-8 h-8 border-4 rounded-full text-orange-500"></div>
     </div>
   );
 }

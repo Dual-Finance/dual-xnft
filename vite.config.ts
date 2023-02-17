@@ -1,7 +1,6 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import { NodeGlobalsPolyfillPlugin } from "@esbuild-plugins/node-globals-polyfill";
-// import { NodeModulesPolyfillPlugin } from "@esbuild-plugins/node-modules-polyfill";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command, mode }) => {
@@ -11,25 +10,30 @@ export default defineConfig(({ command, mode }) => {
       __APP_ENV__: env.APP_ENV,
     },
     plugins: [react()],
-    // resolve: {
-    //   alias: {
-    //     path: "rollup-plugin-node-polyfills/polyfills/path",
-    //   },
-    // },
     optimizeDeps: {
       esbuildOptions: {
         define: {
           global: "globalThis",
         },
-        plugins: [
-          NodeGlobalsPolyfillPlugin({ process: true, buffer: true }),
-          // NodeModulesPolyfillPlugin(),
-        ],
+        plugins: [NodeGlobalsPolyfillPlugin({ process: true, buffer: true })],
       },
     },
     // build: {
     //   rollupOptions: {
-    //     plugins: [rollupNodePolyfill()],
+    //     output: {
+    //       manualChunks: (id) => {
+    //         const isModule = id.includes("node_modules");
+    //         if (isModule && id.includes("@solana")) {
+    //           return "vendor_solana";
+    //         }
+    //         if (isModule && id.includes("@project-serum")) {
+    //           return "vendor_anchor";
+    //         }
+    //         if (isModule && id.includes("@metaplex-foundation")) {
+    //           return "vendor_metaplex";
+    //         }
+    //       },
+    //     },
     //   },
     // },
     server: {

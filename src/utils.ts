@@ -1,4 +1,4 @@
-import { Connection, PublicKey } from "@solana/web3.js";
+import { Commitment, Connection, PublicKey } from "@solana/web3.js";
 
 export function parseNumber(str: string, precision: number) {
   const inputStr = str;
@@ -10,7 +10,7 @@ export function parseNumber(str: string, precision: number) {
     return str;
   }
   if (parseFloat(inputStr) < 0) {
-    return "0"
+    return "0";
   }
   const numberSegments = inputStr.split(".");
   if (numberSegments.length !== 2) {
@@ -26,7 +26,10 @@ export function parseNumber(str: string, precision: number) {
 }
 
 export const prettyFormatPrice = (price: number, decimals = 4): string => {
-  return `$${(price >= 0.1 ? price.toFixed(2) : price.toFixed(decimals)).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`;
+  return `$${(price >= 0.1
+    ? price.toFixed(2)
+    : price.toFixed(decimals)
+  ).replace(/\d(?=(\d{3})+\.)/g, "$&,")}`;
 };
 
 export function getConnection() {
@@ -111,4 +114,87 @@ export function parseGsoState(buf: Buffer) {
     baseMint,
     lockupPeriodEnd,
   };
+}
+
+export async function getMultipleTokenAccounts(
+  connection: Connection,
+  keys: string[],
+  commitment: string
+) {
+  if (keys.length > 100) {
+    const batches: string[][] = chunks(keys, 100);
+    const batchesPromises: Promise<{ keys: string[]; array: any }>[] =
+      batches.map((batch: string[]) => {
+        const result: Promise<{ keys: string[]; array: any }> =
+          getMultipleAccountsCore(connection, batch, commitment, "jsonParsed");
+        return result;
+      });
+    const results: { keys: string[]; array: any }[] = await Promise.all<{
+      keys: string[];
+      array: any;
+    }>(batchesPromises);
+    let allKeys: string[] = [];
+    let allArrays: any[] = [];
+    results.forEach((result: { keys: string[]; array: any }) => {
+      allKeys = allKeys.concat(result.keys);
+      allArrays = allArrays.concat(result.array);
+    });
+    return { keys: allKeys, array: allArrays };
+  }
+
+  const result = await getMultipleAccountsCore(
+    connection,
+    keys,
+    commitment,
+    "jsonParsed"
+  );
+  const array = result.array.map((acc: { [x: string]: any; data: any }) => {
+    if (!acc) {
+      return undefined;
+    }
+    const { data, ...rest } = acc;
+    const obj = {
+      ...rest,
+      data,
+    };
+    return obj;
+  });
+  return { keys, array };
+}
+
+function chunks<T>(array: T[], size: number): T[][] {
+  return Array.apply(0, new Array(Math.ceil(array.length / size))).map(
+    (_, index) => array.slice(index * size, (index + 1) * size)
+  );
+}
+
+async function getMultipleAccountsCore(
+  connection: Connection,
+  keys: string[],
+  commitment: string | undefined,
+  encoding: string | undefined
+): Promise<{ keys: string[]; array: any }> {
+  if (encoding !== "jsonParsed" && encoding !== "base64") {
+    throw new Error();
+  }
+  const args = connection._buildArgs(
+    [keys],
+    commitment as Commitment,
+    encoding
+  );
+
+  // @ts-ignore
+  const unsafeRes = await connection._rpcRequest("getMultipleAccounts", args);
+  if (unsafeRes.error) {
+    throw new Error(
+      `failed to get info about account ${unsafeRes.error.message as string}`
+    );
+  }
+
+  if (unsafeRes.result.value) {
+    const array = unsafeRes.result.value;
+    return { keys, array };
+  }
+
+  throw new Error();
 }

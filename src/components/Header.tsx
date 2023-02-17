@@ -1,21 +1,26 @@
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useMemo } from "react";
 import { FaChevronLeft } from "react-icons/fa";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
+const basePaths = ["/", "/balance"];
 export function Header() {
-  const location = useLocation();
+  const { pathname } = useLocation();
   const title = useMemo(() => {
-    if (location.pathname !== '/') {
-      return location.pathname.split('/')[1];
+    if (pathname !== "/") {
+      return pathname.split("/")[1];
     }
-    return 'Home';
-  }, [location]);
+    return "Home";
+  }, [pathname]);
   return (
     <header className="w-full h-fit bg-black">
       <div className="flex justify-between items-center gap-1 p-2">
         <div className="flex items-center ml-2 gap-2">
-          {title !== 'Home' && <FaChevronLeft onClick={() => window.history.back()}/>}
+          {!basePaths.some((base) => pathname === base) && (
+            <Link to="..">
+              <FaChevronLeft />
+            </Link>
+          )}
           <h1 className="text-left text-xl capitalize inline">{title}</h1>
         </div>
         <div className="flex-1 flex justify-end">

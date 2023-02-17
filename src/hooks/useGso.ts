@@ -6,7 +6,7 @@ import { Metadata, PROGRAM_ID } from "@metaplex-foundation/mpl-token-metadata";
 import { StakingOptions } from "@dual-finance/staking-options";
 
 import { GSO_PROGRAM_ID, GSO_STATE_SIZE } from "../config";
-import { SOState } from "../types";
+import { GsoParams, SOState } from "../types";
 import { msToTimeLeft, parseGsoState } from "../utils";
 
 export default function useGso() {
@@ -87,6 +87,7 @@ export async function fetchGso(connection: Connection) {
     const gsoParams: GsoParams = {
       soName,
       lockupRatio,
+      lotSize,
       expiration: new Date(optionExpiration * 1000).toLocaleDateString(),
       expirationInt: optionExpiration,
       subscription: timeLeft,
@@ -152,6 +153,7 @@ export async function fetchGsoDetails(connection: Connection, name: string) {
     const gsoParams: GsoParams = {
       soName,
       lockupRatio,
+      lotSize,
       expiration: new Date(optionExpiration * 1000).toLocaleDateString(),
       expirationInt: optionExpiration,
       subscription: timeLeft,
@@ -178,18 +180,4 @@ async function getTokenMetadata(uri: string) {
   const data = await fetch(uri);
   const json = await data.json();
   return json;
-}
-
-export interface GsoParams {
-  expiration: string;
-  expirationInt: number;
-  subscription: string;
-  subscriptionInt: number;
-  gsoStatePk: PublicKey;
-  soStatePk: PublicKey;
-  base: PublicKey;
-  soName: string;
-  strike: number;
-  lockupRatio: number;
-  metadata: any;
 }

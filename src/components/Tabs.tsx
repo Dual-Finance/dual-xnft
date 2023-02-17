@@ -16,7 +16,7 @@ export function Tabs() {
               key={tab.path}
               to={tab.path}
               className={({ isActive }) =>
-                `flex-1 p-2 ${isActive ? "text-gray-100" : "text-gray-500"}`
+                `flex-1 p-3 ${isActive ? "text-gray-100" : "text-gray-500"}`
               }
             >
               <div role="tab" className="flex flex-col items-center">

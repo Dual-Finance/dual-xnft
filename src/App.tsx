@@ -8,6 +8,7 @@ import {
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
+import "tw-elements";
 import { Layout } from "./Layout";
 import { HomePage, loader as homeLoader } from "./pages/HomePage";
 import { GsoPage, loader as gsoLoader } from "./pages/GsoPage";
