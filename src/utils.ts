@@ -32,8 +32,12 @@ export const prettyFormatPrice = (price: number, decimals = 4): string => {
   ).replace(/\d(?=(\d{3})+\.)/g, "$&,")}`;
 };
 
-export function getConnection() {
-  return new Connection(import.meta.env.VITE_RPC_URL_MAINNET, "confirmed");
+let connection: Connection;
+export function getConnection(commitment: Commitment = "confirmed") {
+  if (!connection) {
+    connection = new Connection(import.meta.env.VITE_RPC_URL_MAINNET, commitment);
+  }
+  return connection;
 }
 
 export function msToTimeLeft(duration: number) {

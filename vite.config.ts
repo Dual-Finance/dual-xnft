@@ -18,26 +18,29 @@ export default defineConfig(({ command, mode }) => {
         plugins: [NodeGlobalsPolyfillPlugin({ process: true, buffer: true })],
       },
     },
-    // build: {
-    //   rollupOptions: {
-    //     output: {
-    //       manualChunks: (id) => {
-    //         const isModule = id.includes("node_modules");
-    //         if (isModule && id.includes("@solana")) {
-    //           return "vendor_solana";
-    //         }
-    //         if (isModule && id.includes("@project-serum")) {
-    //           return "vendor_anchor";
-    //         }
-    //         if (isModule && id.includes("@metaplex-foundation")) {
-    //           return "vendor_metaplex";
-    //         }
-    //       },
-    //     },
-    //   },
-    // },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: (id) => {
+            const isModule = id.includes("node_modules");
+            if (isModule && id.includes("@solana")) {
+              return "vendor_solana";
+            }
+            if (isModule && id.includes("@project-serum")) {
+              return "vendor_anchor";
+            }
+            if (isModule && id.includes("@metaplex-foundation")) {
+              return "vendor_metaplex";
+            }
+            if (isModule && id.includes("@tanstack")) {
+              return "vendor_tanstack"
+            }
+          },
+        },
+      },
+    },
     server: {
-      port: 19006,
+      port: 9933,
     },
   };
 });

@@ -1,4 +1,5 @@
 import { web3 } from "@project-serum/anchor";
+import { WalletContextState } from "@solana/wallet-adapter-react";
 import {
   Connection,
   PublicKey,
@@ -13,31 +14,29 @@ import {
 } from "@solana/spl-token";
 import { StakingOptions } from "@dual-finance/staking-options";
 import { GSO } from "@dual-finance/gso";
-import { WalletContextState } from "@solana/wallet-adapter-react";
 import { GsoParams } from "../types";
 
 export async function stakeGso(
   { soName, base, gsoStatePk }: GsoParams,
   amount: number,
   connection: Connection,
-  provider: WalletContextState
+  wallet: WalletContextState
 ) {
-  if (!provider.publicKey) {
+  const { publicKey } = wallet;
+  if (!publicKey) {
     return;
   }
-  console.log(soName, base.toBase58());
   try {
     const gso = new GSO(connection.rpcEndpoint);
     const so = new StakingOptions(connection.rpcEndpoint);
     const userBaseAccount = await getAssociatedTokenAddress(
       base,
-      provider.publicKey
+      publicKey
     );
     const transaction = new web3.Transaction();
 
     // TODO: Move the init token accounts into the SDK
     const soState = await so.getState("GSO" + soName, base);
-    console.log(soState);
     const optionMint = await so.soMint(
       // @ts-ignore
       soState.strikes[0],
@@ -46,55 +45,44 @@ export async function stakeGso(
     );
     const userOptionAccount = await getAssociatedTokenAddress(
       optionMint,
-      provider.publicKey
+      publicKey
     );
     if (!(await connection.getAccountInfo(userOptionAccount))) {
       transaction.add(
         createAssociatedTokenAccountInstr(
           userOptionAccount,
           optionMint,
-          provider.publicKey,
-          provider.publicKey
+          publicKey,
+          publicKey
         )
       );
     }
     const xBaseMint = await gso.xBaseMint(gsoStatePk);
     const userXBaseMintAccount = await getAssociatedTokenAddress(
       xBaseMint,
-      provider.publicKey
+      publicKey
     );
     if (!(await connection.getAccountInfo(userXBaseMintAccount))) {
       transaction.add(
         createAssociatedTokenAccountInstr(
           userXBaseMintAccount,
           xBaseMint,
-          provider.publicKey,
-          provider.publicKey
+          publicKey,
+          publicKey
         )
       );
     }
     const stakeInstruction = await gso.createStakeInstruction(
       amount,
       soName,
-      provider.publicKey,
+      publicKey,
       base,
       userBaseAccount
     );
     transaction.add(stakeInstruction);
-    const {
-      context: { slot: minContextSlot },
-      value: { blockhash, lastValidBlockHeight },
-    } = await connection.getLatestBlockhashAndContext();
-    console.log(minContextSlot, blockhash, lastValidBlockHeight);
-    console.log(transaction);
-    const signature = await provider.sendTransaction(transaction, connection, {
-      minContextSlot,
-    });
-    await connection.confirmTransaction({
-      blockhash,
-      lastValidBlockHeight,
-      signature,
-    });
+    // @ts-ignore
+    const signature = await wallet.sendAndConfirm(transaction);
+
     return signature;
   } catch (err) {
     console.error(err);

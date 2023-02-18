@@ -1,6 +1,6 @@
 import { Outlet } from "react-router-dom";
-import { Header } from "./components/Header";
-import { Tabs } from "./components/Tabs";
+import { Header } from "./Header";
+import { Tabs } from "./Tabs";
 
 export function Layout() {
   return (

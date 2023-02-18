@@ -1,10 +1,11 @@
-import { HTMLProps, MouseEventHandler } from "react";
+import { HTMLProps, InputHTMLAttributes, MouseEventHandler } from "react";
 import { CardLight } from "./CardLight";
 
 type InputProps = {
+  onChange: InputHTMLAttributes<HTMLInputElement>['onChange'];
   onMaxClick?: MouseEventHandler<HTMLDivElement>;
   token?: { symbol: string; image: string };
-} & HTMLProps<HTMLInputElement>;
+} & Omit<HTMLProps<HTMLInputElement>, 'onChange'>;
 
 export function TokenInput({
   className,

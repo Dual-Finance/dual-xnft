@@ -1,7 +1,6 @@
-import { web3 } from "@project-serum/anchor";
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { useConnection } from "@solana/wallet-adapter-react";
 import { useQuery } from "@tanstack/react-query";
-import { ChangeEvent, Suspense, useCallback, useMemo, useState } from "react";
+import { ChangeEvent, FormEventHandler, Suspense, useCallback, useMemo, useState } from "react";
 import { Await, defer, useLoaderData, useParams } from "react-router-dom";
 import { queryClient } from "../client";
 import { Button } from "../components/Button";
@@ -13,6 +12,7 @@ import { NUM_SPL_ATOMS_PER_TOKEN } from "../config";
 import { stakeGso } from "../core";
 import { fetchGsoDetails } from "../hooks/useGso";
 import useTokenBalance from "../hooks/useTokenBalance";
+import { useWallet } from "../hooks/useWallet";
 import { GsoParams } from "../types";
 import { getConnection, prettyFormatPrice } from "../utils";
 
@@ -29,7 +29,7 @@ export async function loader({ params }: LoaderParams) {
   return defer({
     gsoDetails: queryClient.fetchQuery({
       queryKey: ["gso", params.name],
-      queryFn: () => fetchGsoDetails(getConnection(), params.name || ""),
+      queryFn: () => fetchGsoDetails(getConnection(), params.name),
     }),
   });
 }
@@ -50,22 +50,14 @@ export function GsoPage() {
 function GsoDetails() {
   const { name } = useParams();
   const { connection } = useConnection();
-  const wallet = useWallet();
   const { data: gsoDetails } = useQuery<GsoParams>({
     queryKey: ["gso", name],
   });
-  const { symbol, image } = gsoDetails?.metadata;
 
-  const [stakeValue, setStakeValue] = useState<string>("");
-  // const stakedToken = symbol.toUpperCase();
-  // const startDate = gsoDetails?.expirationInt
-  //   ? new Date(gsoDetails.expirationInt * 1000).toISOString().slice(0, 10)
-  //   : "<expiration>";
-  // const tokenName = `${stakedToken || "<token>"}-${startDate}@${
-  //   gsoDetails?.strike
-  // }`;
-  const handleStakeClick = () => {
-    if (!connection || !wallet.wallet || !gsoDetails) {
+  const [stakeValue, setStakeValue] = useState("");
+  const wallet = useWallet();
+  const handleStakeClick = useCallback(() => {
+    if (!connection || !gsoDetails) {
       return;
     }
 
@@ -77,7 +69,7 @@ function GsoDetails() {
         console.log("signature:", signature);
       })
       .catch(console.error);
-  };
+  }, [gsoDetails, stakeValue, connection, wallet]);
 
   const tokenBalance = useTokenBalance(gsoDetails?.base.toBase58());
   const handleMaxClick = useCallback(() => {
@@ -86,9 +78,9 @@ function GsoDetails() {
     }
   }, [tokenBalance]);
   const gsoAmount = useMemo(() => {
-    if (stakeValue && gsoDetails && gsoDetails.lockupRatio && gsoDetails.lotSize) {
+    if (stakeValue && gsoDetails) {
       return Number(
-        Math.floor(parseFloat(stakeValue) * NUM_SPL_ATOMS_PER_TOKEN[gsoDetails.base.toBase58()] * gsoDetails.lockupRatio / gsoDetails.lotSize)
+        Math.floor(parseFloat(stakeValue) * gsoDetails.lockupRatio)
       );
     }
     return 0;
@@ -100,6 +92,14 @@ function GsoDetails() {
     }
     return false;
   }, [stakeValue, tokenBalance]);
+  const { symbol, image } = gsoDetails?.metadata;
+  // const stakedToken = symbol.toUpperCase();
+  // const startDate = gsoDetails?.expirationInt
+  //   ? new Date(gsoDetails.expirationInt * 1000).toISOString().slice(0, 10)
+  //   : "<expiration>";
+  // const tokenName = `${stakedToken || "<token>"}-${startDate}@${
+  //   gsoDetails?.strike
+  // }`;
   return (
     <div className="flex flex-col gap-2">
       {gsoDetails && (
@@ -120,7 +120,7 @@ function GsoDetails() {
             <TokenInput
               placeholder="0.0"
               token={{ symbol, image }}
-              onChange={(event: ChangeEvent<HTMLInputElement>) => {
+              onChange={(event) => {
                 if (
                   !Number.isNaN(parseFloat(event.target.value)) ||
                   event.target.value === "." ||

@@ -31,3 +31,18 @@ export interface GsoParams {
   lotSize: number;
   metadata: any;
 }
+
+export interface GsoBalanceParams {
+  expiration: string;
+  expirationInt: number;
+  soStatePk: PublicKey;
+  base: PublicKey;
+  quote: PublicKey;
+  baseAtoms: number;
+  quoteAtoms: number;
+  soName: string;
+  strike: number;
+  lotSize: number;
+  numTokens: number;
+  metadata?: any;
+}

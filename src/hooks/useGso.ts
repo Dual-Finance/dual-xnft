@@ -103,7 +103,8 @@ export async function fetchGso(connection: Connection) {
   return allGsoParams;
 }
 
-export async function fetchGsoDetails(connection: Connection, name: string) {
+export async function fetchGsoDetails(connection: Connection, name?: string) {
+  if (!name) return;
   const stakingOptions = new StakingOptions(connection.rpcEndpoint);
   const data = await connection.getProgramAccounts(
     new PublicKey(GSO_PROGRAM_ID),

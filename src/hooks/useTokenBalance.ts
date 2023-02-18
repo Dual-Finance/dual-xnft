@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { useConnection } from "@solana/wallet-adapter-react";
 import { Connection, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
+import { useWallet } from "./useWallet";
 
 async function fetchBalance(
   token: string,

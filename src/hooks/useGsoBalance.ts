@@ -1,46 +1,48 @@
 import { useEffect, useState } from "react";
 import { Connection, PublicKey } from "@solana/web3.js";
-import {
-  useConnection,
-  useWallet,
-  WalletContextState,
-} from "@solana/wallet-adapter-react";
-import { getAssociatedTokenAddress } from "@solana/spl-token";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { getAssociatedTokenAddress, getMint } from "@solana/spl-token";
 import { GSO } from "@dual-finance/gso";
 import { GSO_PROGRAM_ID, GSO_STATE_SIZE } from "../config";
 import { getMultipleTokenAccounts, parseGsoState } from "../utils";
+import { StakingOptions } from "@dual-finance/staking-options";
+import { GsoBalanceParams, SOState } from "../types";
+import { Metadata, PROGRAM_ID } from "@metaplex-foundation/mpl-token-metadata";
 
 export default function useGsoBalance() {
   const { connection } = useConnection();
-  const wallet = useWallet();
+  const { publicKey } = useWallet();
 
-  const [gso, setGso] = useState<any[]>([]);
+  const [gso, setGso] = useState<GsoBalanceParams[]>([]);
 
   useEffect(() => {
-    fetchGsoBalance(connection, wallet)
+    fetchGsoBalance(connection, publicKey)
       .then((data) => {
         if (data) {
           setGso(data);
         }
       })
       .catch(console.error);
-  }, [connection, wallet]);
+  }, [connection, publicKey]);
 
   return { gso };
 }
 
 export async function fetchGsoBalance(
   connection: Connection,
-  provider: WalletContextState
+  publicKey: PublicKey | null
 ) {
-  if (!provider.publicKey) {
+  if (!publicKey) {
     return;
   }
   // Fetch all program accounts for SO
-  const data = await connection.getProgramAccounts(new PublicKey(GSO_PROGRAM_ID));
-  const allGsoParams = [];
+  const data = await connection.getProgramAccounts(
+    new PublicKey(GSO_PROGRAM_ID)
+  );
+  const allBalanceParams = [];
 
   const gsoHelper = new GSO(connection.rpcEndpoint);
+  const stakingOptions = new StakingOptions(connection.rpcEndpoint);
 
   const allTokenAccounts: string[] = [];
   const states = data.filter((item) => {
@@ -48,10 +50,7 @@ export async function fetchGsoBalance(
   });
   for (const acct of states) {
     const xBaseMint: PublicKey = await gsoHelper.xBaseMint(acct.pubkey);
-    const tokenAddress = await getAssociatedTokenAddress(
-      xBaseMint,
-      provider.publicKey
-    );
+    const tokenAddress = await getAssociatedTokenAddress(xBaseMint, publicKey);
     allTokenAccounts.push(tokenAddress.toBase58());
   }
 
@@ -68,6 +67,19 @@ export async function fetchGsoBalance(
     const { soName, baseMint, lockupPeriodEnd, strike } = parseGsoState(
       acct.account.data
     );
+    const { lotSize, quoteMint }: SOState = (await stakingOptions.getState(
+      `GSO${soName}`,
+      baseMint
+    )) as unknown as SOState;
+    const pda = await getMetadataPDA(baseMint);
+    const metadata = await Metadata.fromAccountAddress(connection, pda);
+    const tokenJson = await getTokenMetadata(
+      metadata.data.uri.replace(/\0.*$/g, "")
+    );
+    const baseAtoms = (await getMint(connection, baseMint)).decimals;
+    const quoteAtoms = (await getMint(connection, quoteMint)).decimals;
+    const strikeInUSD =
+      (strike / (10 ** quoteAtoms * lotSize)) * 10 ** baseAtoms;
     const numTokens =
       tokenAccounts.array[i].data.parsed.info.tokenAmount.amount /
       10 **
@@ -78,23 +90,50 @@ export async function fetchGsoBalance(
     }
 
     try {
-      // TODO: Rename this function as it does more than just DIPs
-      const dipParams = {
+      const balanceParams: GsoBalanceParams = {
         soName,
         numTokens,
-        lotSize: 10 ** 6, // lotSize
-        baseTokensPerAtom: 10 ** 6, // baseAtoms
+        lotSize,
+        baseAtoms,
+        quoteAtoms,
         expiration: new Date(lockupPeriodEnd * 1_000).toLocaleDateString(),
         expirationInt: lockupPeriodEnd,
-        strike,
+        strike: strikeInUSD,
         // Allow for SO State to be closed
         soStatePk: acct.pubkey,
         base: baseMint,
+        quote: quoteMint,
+        metadata: tokenJson,
       };
-      allGsoParams.push(dipParams);
-    } catch (err) {
-      console.log("Unable to create balance entry for", soName);
+      allBalanceParams.push(balanceParams);
+    } catch (error) {
+      console.error(error);
     }
-    return allGsoParams;
   }
+  return allBalanceParams;
+}
+
+export async function fetchGsoBalanceDetails(
+  connection: Connection,
+  publicKey: PublicKey,
+  name?: string
+) {
+  const balanceParams = await fetchGsoBalance(connection, publicKey);
+  if (balanceParams) {
+    return balanceParams.find((p) => p.soName === name);
+  }
+}
+
+async function getMetadataPDA(mint: PublicKey) {
+  const [publicKey] = PublicKey.findProgramAddressSync(
+    [Buffer.from("metadata"), PROGRAM_ID.toBuffer(), mint.toBuffer()],
+    PROGRAM_ID
+  );
+  return publicKey;
+}
+
+async function getTokenMetadata(uri: string) {
+  const data = await fetch(uri);
+  const json = await data.json();
+  return json;
 }

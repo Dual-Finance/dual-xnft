@@ -1,30 +1,28 @@
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useMemo } from "react";
 import { FaChevronLeft } from "react-icons/fa";
-import { Link, useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const basePaths = ["/", "/balance"];
 export function Header() {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const title = useMemo(() => {
     if (pathname !== "/") {
-      return pathname.split("/")[1];
+      const segments = pathname.split("/");
+      return pathname.split("/")[segments.length - 1];
     }
     return "Home";
   }, [pathname]);
   return (
     <header className="w-full h-fit bg-black">
-      <div className="flex justify-between items-center gap-1 p-2">
-        <div className="flex items-center ml-2 gap-2">
+      <div className="h-16 flex justify-between items-center gap-1 p-2">
+        <div className="flex items-baseline ml-2 gap-2">
           {!basePaths.some((base) => pathname === base) && (
-            <Link to="..">
+            <button onClick={() => navigate(-1)}>
               <FaChevronLeft />
-            </Link>
+            </button>
           )}
           <h1 className="text-left text-xl capitalize inline">{title}</h1>
-        </div>
-        <div className="flex-1 flex justify-end">
-          <WalletMultiButton />
         </div>
       </div>
     </header>

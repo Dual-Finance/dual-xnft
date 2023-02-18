@@ -3,8 +3,10 @@ import { Suspense } from "react";
 import { FaChevronRight } from "react-icons/fa";
 import { Await, Link, useLoaderData, defer } from "react-router-dom";
 import { queryClient } from "../client";
+import { Background } from "../components/Background";
 import { Card } from "../components/Card";
 import { Loading } from "../components/Loading";
+import { Logo } from "../components/Logo";
 import { fetchGso } from "../hooks/useGso";
 import { GsoParams } from "../types";
 import { getConnection, prettyFormatPrice } from "../utils";
@@ -21,7 +23,13 @@ export async function loader() {
 export function HomePage() {
   const data = useLoaderData() as any;
   return (
-    <div className="h-full">
+    <div>
+      <Background role="banner" className="-mt-2 -mx-2 mb-2 p-2">
+        <Logo className="max-w-[200px] mx-auto" />
+        <h2 className="text-lg text-white">
+          Presents Staking Options
+        </h2>
+      </Background>
       <Suspense fallback={<Loading />}>
         <Await resolve={data.gso}>
           <GsoList />
