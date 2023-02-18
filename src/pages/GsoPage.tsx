@@ -1,6 +1,6 @@
 import { useConnection } from "@solana/wallet-adapter-react";
 import { useQuery } from "@tanstack/react-query";
-import { ChangeEvent, FormEventHandler, Suspense, useCallback, useMemo, useState } from "react";
+import { Suspense, useCallback, useMemo, useState } from "react";
 import { Await, defer, useLoaderData, useParams } from "react-router-dom";
 import { queryClient } from "../client";
 import { Button } from "../components/Button";
