@@ -33,7 +33,7 @@ export default defineConfig(({ command, mode }) => {
               return "vendor_metaplex";
             }
             if (isModule && id.includes("@tanstack")) {
-              return "vendor_tanstack"
+              return "vendor_tanstack";
             }
           },
         },

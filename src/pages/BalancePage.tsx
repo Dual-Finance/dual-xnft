@@ -14,7 +14,8 @@ export async function loader() {
   return defer({
     gsoBalances: queryClient.fetchQuery({
       queryKey: ["balance", window.xnft.solana.publicKey.toBase58()],
-      queryFn: () => fetchGsoBalance(getConnection(), window.xnft.solana.publicKey),
+      queryFn: () =>
+        fetchGsoBalance(getConnection(), window.xnft.solana.publicKey),
     }),
   });
 }
@@ -25,7 +26,7 @@ export function BalancePage() {
     <div className="h-full">
       <Suspense fallback={<Loading />}>
         <Await resolve={data.gsoBalances}>
-          <Balances />          
+          <Balances />
         </Await>
       </Suspense>
     </div>
@@ -40,35 +41,36 @@ function Balances() {
   });
   return (
     <div role="list">
-      {gsoBalances && gsoBalances.map((g) => {
-        const { symbol, image } = g.metadata;
-        return (
-          <Link to={`/balance/${g.soName}`} key={g.soName}>
-            <Card>
-              <div
-                role="listitem"
-                className="flex gap-2 items-center text-white"
-              >
-                <img
-                  src={image}
-                  alt={`${symbol} icon`}
-                  className="w-10 h-10 rounded-full"
-                />
-                <div className="flex-1 text-left">
-                  <p className="text-lg">
-                    {g.numTokens} {symbol.toUpperCase()}
-                  </p>
-                  <p className="text-sm">
-                    Strike: {prettyFormatPrice(g.strike, 8)}
-                  </p>
-                  <p className="text-sm">Expires: {g.expiration}</p>
+      {gsoBalances &&
+        gsoBalances.map((g) => {
+          const { symbol, image } = g.metadata;
+          return (
+            <Link to={`/balance/${g.soName}`} key={g.soName}>
+              <Card>
+                <div
+                  role="listitem"
+                  className="flex gap-2 items-center text-white"
+                >
+                  <img
+                    src={image}
+                    alt={`${symbol} icon`}
+                    className="w-10 h-10 rounded-full"
+                  />
+                  <div className="flex-1 text-left">
+                    <p className="text-lg">
+                      {g.numTokens} {symbol.toUpperCase()}
+                    </p>
+                    <p className="text-sm">
+                      Strike: {prettyFormatPrice(g.strike, 8)}
+                    </p>
+                    <p className="text-sm">Expires: {g.expiration}</p>
+                  </div>
+                  <FaChevronRight />
                 </div>
-                <FaChevronRight />
-              </div>
-            </Card>
-          </Link>
-        );
-      })}
+              </Card>
+            </Link>
+          );
+        })}
     </div>
   );
 }

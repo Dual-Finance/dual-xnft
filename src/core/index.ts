@@ -29,10 +29,7 @@ export async function stakeGso(
   try {
     const gso = new GSO(connection.rpcEndpoint);
     const so = new StakingOptions(connection.rpcEndpoint);
-    const userBaseAccount = await getAssociatedTokenAddress(
-      base,
-      publicKey
-    );
+    const userBaseAccount = await getAssociatedTokenAddress(base, publicKey);
     const transaction = new web3.Transaction();
 
     // TODO: Move the init token accounts into the SDK

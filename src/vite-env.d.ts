@@ -10,4 +10,3 @@ interface ImportMeta {
 }
 
 declare module "tw-elements" {}
-

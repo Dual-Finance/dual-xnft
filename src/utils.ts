@@ -35,7 +35,10 @@ export const prettyFormatPrice = (price: number, decimals = 4): string => {
 let connection: Connection;
 export function getConnection(commitment: Commitment = "confirmed") {
   if (!connection) {
-    connection = new Connection(import.meta.env.VITE_RPC_URL_MAINNET, commitment);
+    connection = new Connection(
+      import.meta.env.VITE_RPC_URL_MAINNET,
+      commitment
+    );
   }
   return connection;
 }

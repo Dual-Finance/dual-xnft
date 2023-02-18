@@ -82,8 +82,13 @@ function BalanceDetails() {
             <div className="flex items-center text-left gap-4">
               <img src={image} className="w-20 h-20" />
               <div className="flex-1 text-md border-l-gray-500 border-l-2 pl-4">
-                <h2 className="text-lg font-bold">{gsoBalanceDetails.soName}</h2>
-                <p>Collateral: {gsoBalanceDetails.numTokens} {symbol.toUpperCase()}</p>
+                <h2 className="text-lg font-bold">
+                  {gsoBalanceDetails.soName}
+                </h2>
+                <p>
+                  Collateral: {gsoBalanceDetails.numTokens}{" "}
+                  {symbol.toUpperCase()}
+                </p>
                 <p>Strike: {prettyFormatPrice(gsoBalanceDetails.strike, 8)}</p>
                 <p>Expires: {gsoBalanceDetails.expiration}</p>
               </div>
@@ -106,7 +111,9 @@ function BalanceDetails() {
             />
 
             <Button onClick={handleStakeClick}>
-              {Date.now().valueOf() < gsoBalanceDetails.expirationInt ? 'Exercise' : 'Withdraw'}
+              {Date.now().valueOf() < gsoBalanceDetails.expirationInt
+                ? "Exercise"
+                : "Withdraw"}
             </Button>
           </Card>
         </>
