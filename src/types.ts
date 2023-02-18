@@ -38,6 +38,7 @@ export interface GsoBalanceParams {
   soStatePk: PublicKey;
   base: PublicKey;
   quote: PublicKey;
+  option: PublicKey;
   baseAtoms: number;
   quoteAtoms: number;
   soName: string;
@@ -45,4 +46,5 @@ export interface GsoBalanceParams {
   lotSize: number;
   numTokens: number;
   metadata?: any;
+  optionMetadata?: any;
 }
