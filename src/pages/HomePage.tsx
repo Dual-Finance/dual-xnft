@@ -23,15 +23,13 @@ export async function loader() {
 export function HomePage() {
   const data = useLoaderData() as any;
   return (
-    <div>
-      <Background role="banner" className="-mt-2 -mx-2 mb-2 p-2">
-        <Logo className="max-w-[200px] mx-auto" />
-        <h2 className="text-lg text-white">
-          Presents Staking Options
-        </h2>
-      </Background>
+    <div className="h-full">
       <Suspense fallback={<Loading />}>
         <Await resolve={data.gso}>
+          <Background role="banner" className="-mt-2 -mx-2 mb-2 p-2">
+            <Logo className="max-w-[200px] mx-auto" />
+            <h2 className="text-lg text-white">Presents Staking Options</h2>
+          </Background>
           <GsoList />
         </Await>
       </Suspense>
