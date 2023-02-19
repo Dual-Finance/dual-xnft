@@ -1,9 +1,10 @@
-import { web3 } from "@project-serum/anchor";
+import { BN, web3 } from "@project-serum/anchor";
 import { WalletContextState } from "@solana/wallet-adapter-react";
 import {
   Connection,
   PublicKey,
   SystemProgram,
+  Transaction,
   TransactionInstruction,
   SYSVAR_RENT_PUBKEY,
 } from "@solana/web3.js";
@@ -14,7 +15,7 @@ import {
 } from "@solana/spl-token";
 import { StakingOptions } from "@dual-finance/staking-options";
 import { GSO } from "@dual-finance/gso";
-import { GsoParams } from "../types";
+import { GsoBalanceParams, GsoParams } from "../types";
 
 export async function stakeGso(
   { soName, base, gsoStatePk }: GsoParams,
@@ -86,7 +87,130 @@ export async function stakeGso(
   }
 }
 
-export function createAssociatedTokenAccountInstr(
+export async function unstakeGSO(
+  { soName, base }: GsoBalanceParams,
+  amount: number,
+  connection: Connection,
+  wallet: WalletContextState
+) {
+  if (!wallet.publicKey) {
+    return;
+  }
+  try {
+    const gso = new GSO(connection.rpcEndpoint);
+    let transaction = new web3.Transaction();
+
+    const userBaseAccount = await getAssociatedTokenAddress(
+      base,
+      wallet.publicKey
+    );
+    // Required since SDK uses getAccount() & user may have burned account
+    await checkBurnedAccount(
+      transaction,
+      connection,
+      userBaseAccount,
+      base,
+      wallet.publicKey
+    );
+    const unstakeInstruction = await gso.createUnstakeInstruction(
+      amount,
+      soName,
+      wallet.publicKey,
+      userBaseAccount
+    );
+
+    transaction.add(unstakeInstruction);
+
+    // TODO: Enable once figured out why not all of the amount got unstaked.
+    // const gsoState = await gso.state(soName);
+    // const xBaseMint = await gso.xBaseMint(gsoState);
+    // const userXTokenAccount = await getAssociatedTokenAddress(xBaseMint, provider.publicKey);
+    // transaction.add(createCloseAccountInstruction(userXTokenAccount, provider.publicKey, provider.publicKey));
+
+    // @ts-ignore
+    const signature = await wallet.sendAndConfirm(transaction);
+
+    return signature;
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+export async function exerciseSO(
+  { soName, base, quote }: GsoBalanceParams,
+  amount: number,
+  connection: Connection,
+  provider: WalletContextState,
+  _swapQty?: number
+) {
+  if (!provider.publicKey) return;
+  try {
+    const so = new StakingOptions(connection.rpcEndpoint);
+    const soStateObj = await so.getState(soName, base);
+    // @ts-ignore
+    const strikeState = soStateObj.strikes[0];
+    const strikeAtomsPerLot = new BN(strikeState);
+    const authority = provider.publicKey;
+    // @ts-ignore
+    const optionMint = await so.soMint(strikeAtomsPerLot, soName, base);
+    const userSoAccount = await getAssociatedTokenAddress(
+      optionMint,
+      provider.publicKey
+    );
+    const userQuoteAccount = await getAssociatedTokenAddress(
+      quote,
+      provider.publicKey
+    );
+    const userBaseAccount = await getAssociatedTokenAddress(
+      base,
+      provider.publicKey
+    );
+    // Required since SDK uses getAccount() & user may have burned account
+    const transactionExercise = new web3.Transaction();
+    await checkBurnedAccount(
+      transactionExercise,
+      connection,
+      userBaseAccount,
+      base,
+      provider.publicKey
+    );
+    const exerciseInstruction = await so.createExerciseInstruction(
+      new BN(amount),
+      strikeAtomsPerLot,
+      soName,
+      authority,
+      userSoAccount,
+      userQuoteAccount,
+      userBaseAccount
+    );
+    transactionExercise.add(exerciseInstruction);
+    // @ts-ignore
+    const signature = await provider.sendAndConfirm(transactionExercise);
+    return signature;
+  } catch (err) {
+    console.log(err);
+  }
+}
+
+async function checkBurnedAccount(
+  tx: Transaction,
+  connection: Connection,
+  userAccount: PublicKey,
+  mint: PublicKey,
+  publicKey: PublicKey
+) {
+  if (!(await connection.getAccountInfo(userAccount))) {
+    const createAccnt = createAssociatedTokenAccountInstr(
+      userAccount,
+      mint,
+      publicKey,
+      publicKey
+    );
+    tx.add(createAccnt);
+  }
+}
+
+function createAssociatedTokenAccountInstr(
   pubKey: PublicKey,
   mint: PublicKey,
   owner: PublicKey,
