@@ -28,3 +28,7 @@ jobs:
       - run: yarn install --frozen-lockfile
       - run: yarn prettier:check
       - run: yarn build
+      - uses: actions/upload-artifact@v3
+        with:
+          name: dist
+          path: dist/
