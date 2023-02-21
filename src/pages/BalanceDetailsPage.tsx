@@ -7,7 +7,7 @@ import { Button } from "../components/Button";
 import { Card } from "../components/Card";
 import { Loading } from "../components/Loading";
 import { TokenInput } from "../components/TokenInput";
-import { exerciseSO } from "../core";
+import { exerciseSO, unstakeGSO } from "../core";
 import { fetchGsoBalanceDetails } from "../hooks/useGsoBalance";
 import { useWallet } from "../hooks/useWallet";
 import { GsoBalanceParams } from "../types";
@@ -62,32 +62,41 @@ function BalanceDetails() {
   const { connection } = useConnection();
 
   const [stakeValue, setStakeValue] = useState("");
+  const now = new Date();
+  const isExercisable =
+    (gsoBalanceDetails?.expirationInt || now.valueOf()) < now.valueOf();
   const handleStakeClick = useCallback(() => {
     if (!connection || !wallet || !gsoBalanceDetails) {
       return;
     }
 
     const amount = Number(parseFloat(stakeValue));
-    exerciseSO(gsoBalanceDetails, amount, connection, wallet)
-      .then((signature) => {
-        console.log("signature:", signature);
-      })
-      .catch(console.error);
+    if (isExercisable) {
+      exerciseSO(gsoBalanceDetails, amount, connection, wallet)
+        .then((signature) => {
+          console.log("signature:", signature);
+        })
+        .catch(console.error);
+    } else {
+      unstakeGSO(gsoBalanceDetails, amount * gsoBalanceDetails.baseAtoms, connection, wallet)
+        .then((signature) => {
+          console.log("signature:", signature);
+        })
+        .catch(console.error);
+    }
   }, [gsoBalanceDetails, stakeValue, connection, wallet]);
 
   if (!gsoBalanceDetails) return null;
 
   const { symbol, image } = gsoBalanceDetails.metadata;
-  const isExercisable = gsoBalanceDetails.expirationInt < new Date().valueOf();
   const onMaxClick = isExercisable
     ? () => {
-        setStakeValue(gsoBalanceDetails.optionTokens.toString());
-      }
+      setStakeValue(gsoBalanceDetails.optionTokens.toString());
+    }
     : () => {
-        setStakeValue(gsoBalanceDetails.numTokens.toString());
-      };
-  console.log(gsoBalanceDetails.baseAtoms);
-  const precision = gsoBalanceDetails.baseAtoms;
+      setStakeValue(gsoBalanceDetails.numTokens.toString());
+    };
+  const precision = gsoBalanceDetails?.baseAtoms;
   return (
     <div className="flex flex-col gap-2">
       {gsoBalanceDetails && (
@@ -104,7 +113,7 @@ function BalanceDetails() {
                 ) : (
                   <p>
                     Collateral: {gsoBalanceDetails.numTokens}{" "}
-                    {symbol.toUpperCase()}
+                    {symbol?.toUpperCase()}
                   </p>
                 )}
                 <p>Strike: {prettyFormatPrice(gsoBalanceDetails.strike, 8)}</p>
@@ -124,7 +133,6 @@ function BalanceDetails() {
               }
               onChange={(event: ChangeEvent<HTMLInputElement>) => {
                 const inputStr = event.target.value;
-                console.log(inputStr);
                 if (
                   !Number.isNaN(parseFloat(inputStr)) ||
                   inputStr === "." ||
@@ -132,35 +140,13 @@ function BalanceDetails() {
                 ) {
                   setStakeValue(inputStr);
                 }
-                if (parseFloat(inputStr) < 0) {
-                  setStakeValue("0");
-                  return;
-                }
-                const numberSegments = inputStr.split(".");
-                if (numberSegments.length !== 2) {
-                  return;
-                }
-                const maxTokenDecimals =
-                  gsoBalanceDetails.baseAtoms.toString().length - 1;
-                console.log(maxTokenDecimals);
-                const inputDecimals = numberSegments[1].length;
-                console.log(inputDecimals);
-                const decimals = Math.min(inputDecimals, maxTokenDecimals);
-                console.log(decimals);
-                const sanitizedValue = Number(
-                  (parseFloat(inputStr) * 10 ** decimals) / 10 ** decimals
-                ).toFixed(decimals);
-                console.log(sanitizedValue);
-                setStakeValue(sanitizedValue);
               }}
               value={stakeValue}
               onMaxClick={onMaxClick}
             />
 
             <Button onClick={handleStakeClick}>
-              {gsoBalanceDetails.expirationInt < Date.now().valueOf()
-                ? "Exercise"
-                : "Withdraw"}
+              {isExercisable ? "Exercise" : "Withdraw"}
             </Button>
           </Card>
         </>

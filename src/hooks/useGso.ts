@@ -20,9 +20,7 @@ export default function useGso() {
         .then((data) => {
           setGso(data);
         })
-        .catch((error) => {
-          console.error(error);
-        });
+        .catch(console.error);
     }
   }, [connection]);
 
@@ -47,9 +45,8 @@ export async function fetchGso(connection: Connection) {
     } = parseGsoState(acct.account.data);
     const lockupRatio = lockupRatioTokensPerMillion / 1000000;
     const stakeTimeRemainingMs = subscriptionPeriodEnd * 1000 - Date.now();
-    const isTesting =
-      soName.toLowerCase().includes("test") ||
-      soName.toLowerCase().includes("trial");
+    const isTesting = soName.toLowerCase().includes("trial");
+
     if (
       stakeTimeRemainingMs <= 0 ||
       lockupRatio <= 0 ||

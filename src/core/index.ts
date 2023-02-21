@@ -188,7 +188,7 @@ export async function exerciseSO(
     const signature = await provider.sendAndConfirm(transactionExercise);
     return signature;
   } catch (err) {
-    console.log(err);
+    console.error(err);
   }
 }
 

@@ -39,7 +39,7 @@ export interface GsoBalanceParams {
   gsoStatePk: PublicKey;
   base: PublicKey;
   quote: PublicKey;
-  option: PublicKey;
+  option?: PublicKey;
   baseAtoms: number;
   quoteAtoms: number;
   soName: string;

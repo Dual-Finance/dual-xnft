@@ -61,12 +61,6 @@ export async function fetchGsoBalance(
       allTokenAccounts,
       "single"
     );
-    // const optionTokenAccounts = await getMultipleTokenAccounts(
-    //   connection,
-    //   allOptionTokenAccounts,
-    //   "single"
-    // );
-    // console.log(optionTokenAccounts.array);
     for (let i = 0; i < tokenAccounts.array.length; ++i) {
       if (!tokenAccounts.array[i]) {
         continue;
@@ -75,10 +69,16 @@ export async function fetchGsoBalance(
       const { soName, baseMint, lockupPeriodEnd, strike, stakingOptionsState } =
         parseGsoState(acct.account.data);
       const gsoName = `GSO${soName}`;
-      const { lotSize, quoteMint, strikes } = (await stakingOptions.getState(
-        gsoName,
-        baseMint
-      )) as unknown as SOState;
+      let soState;
+      try {
+        soState = (await stakingOptions.getState(
+          gsoName,
+          baseMint
+        )) as unknown as SOState;
+      } catch (err) {
+        continue;
+      }
+      const { lotSize, quoteMint, strikes } = soState;
       const pda = await getMetadataPDA(baseMint);
       const metadata = await Metadata.fromAccountAddress(connection, pda);
       const tokenJson = await getTokenMetadata(
@@ -102,7 +102,7 @@ export async function fetchGsoBalance(
       const optionTokens =
         optionAccounts.array[0].data.parsed.info.tokenAmount.amount /
         10 **
-          Number(optionAccounts.array[0].data.parsed.info.tokenAmount.decimals);
+        Number(optionAccounts.array[0].data.parsed.info.tokenAmount.decimals);
       const optionPda = await getMetadataPDA(optionMint);
       const optionMetadata = await Metadata.fromAccountAddress(
         connection,
@@ -114,7 +114,7 @@ export async function fetchGsoBalance(
       const numTokens =
         tokenAccounts.array[i].data.parsed.info.tokenAmount.amount /
         10 **
-          Number(tokenAccounts.array[i].data.parsed.info.tokenAmount.decimals);
+        Number(tokenAccounts.array[i].data.parsed.info.tokenAmount.decimals);
 
       if (numTokens === 0) {
         continue;

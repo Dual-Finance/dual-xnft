@@ -54,7 +54,7 @@ function Balances() {
             const { symbol, image } = g.metadata;
             const { symbol: optionSymbol, image: optionImage } =
               g.optionMetadata;
-            const isExercisable = g.expirationInt < now.valueOf();
+            const isExercisable = (g.expirationInt < now.valueOf());
             return (
               <Link to={`/balance/${g.soName}`} key={g.soName}>
                 <Card>
@@ -80,7 +80,7 @@ function Balances() {
                       <div className="text-lg">
                         {isExercisable
                           ? `${g.optionTokens} Options`
-                          : `${g.numTokens} ${symbol.toUpperCase()}`}
+                          : `${g.numTokens} ${symbol?.toUpperCase()}`}
                       </div>
                       <p className="text-sm">
                         Strike: {prettyFormatPrice(g.strike, 8)}
