@@ -1,4 +1,5 @@
 import { Transition } from "@headlessui/react";
+import { useConnection } from "@solana/wallet-adapter-react";
 import { useQuery } from "@tanstack/react-query";
 import { Suspense } from "react";
 import { FaChevronRight } from "react-icons/fa";
@@ -7,6 +8,7 @@ import { queryClient } from "../client";
 import { Card } from "../components/Card";
 import { Loading } from "../components/Loading";
 import { fetchGsoBalance } from "../hooks/useGsoBalance";
+import { fetchStakingOptionsBalance } from "../hooks/useStakingOptionsBalance";
 import { useWallet } from "../hooks/useWallet";
 import { GsoBalanceParams } from "../types";
 import { getConnection, prettyFormatPrice } from "../utils";
@@ -14,7 +16,7 @@ import { getConnection, prettyFormatPrice } from "../utils";
 export async function loader() {
   return defer({
     gsoBalances: queryClient.fetchQuery({
-      queryKey: ["balance", window.xnft.solana.publicKey.toBase58()],
+      queryKey: ["balance", "gso", window.xnft.solana.publicKey.toBase58()],
       queryFn: () =>
         fetchGsoBalance(getConnection(), window.xnft.solana.publicKey),
     }),
@@ -37,7 +39,7 @@ export function BalancePage() {
 function Balances() {
   const { publicKey } = useWallet();
   const { data: gsoBalances } = useQuery<GsoBalanceParams[]>({
-    queryKey: ["balance", publicKey.toBase58()],
+    queryKey: ["balance", "gso", publicKey.toBase58()],
   });
   return (
     <Transition

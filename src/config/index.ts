@@ -1,5 +1,5 @@
-export const GSO_PROGRAM_ID = "DuALd6fooWzVDkaTsQzDAxPGYCnLrnWamdNNTNxicdX8";
 export const GSO_STATE_SIZE = 1000;
+export const STAKING_OPTIONS_STATE_SIZE = 1150;
 
 export const USDC_MINT_MAINNET = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 export const BONK_MINT_MAINNET = "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263";

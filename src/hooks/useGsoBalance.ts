@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { getAssociatedTokenAddress, getMint } from "@solana/spl-token";
-import { GSO } from "@dual-finance/gso";
-import { GSO_PROGRAM_ID, GSO_STATE_SIZE } from "../config";
+import { GSO, GSO_PK } from "@dual-finance/gso";
+import { GSO_STATE_SIZE } from "../config";
 import { getMultipleTokenAccounts, parseGsoState } from "../utils";
 import { StakingOptions } from "@dual-finance/staking-options";
 import { GsoBalanceParams, SOState } from "../types";
@@ -37,9 +37,7 @@ export async function fetchGsoBalance(
   }
   try {
     // Fetch all program accounts for SO
-    const data = await connection.getProgramAccounts(
-      new PublicKey(GSO_PROGRAM_ID)
-    );
+    const data = await connection.getProgramAccounts(GSO_PK);
     const allBalanceParams = [];
 
     const gsoHelper = new GSO(connection.rpcEndpoint);

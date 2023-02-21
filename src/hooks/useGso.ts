@@ -4,8 +4,9 @@ import { getMint } from "@solana/spl-token";
 import { useConnection } from "@solana/wallet-adapter-react";
 import { Metadata, PROGRAM_ID } from "@metaplex-foundation/mpl-token-metadata";
 import { StakingOptions } from "@dual-finance/staking-options";
+import { GSO_PK } from "@dual-finance/gso";
 
-import { GSO_PROGRAM_ID, GSO_STATE_SIZE } from "../config";
+import { GSO_STATE_SIZE } from "../config";
 import { GsoParams, SOState } from "../types";
 import { msToTimeLeft, parseGsoState } from "../utils";
 
@@ -30,10 +31,7 @@ export default function useGso() {
 
 export async function fetchGso(connection: Connection) {
   const stakingOptions = new StakingOptions(connection.rpcEndpoint);
-  const data = await connection.getProgramAccounts(
-    new PublicKey(GSO_PROGRAM_ID),
-    "confirmed"
-  );
+  const data = await connection.getProgramAccounts(GSO_PK);
   const allGsoParams = [];
   for (const acct of data) {
     if (acct.account.data.length !== GSO_STATE_SIZE) {
@@ -106,10 +104,7 @@ export async function fetchGso(connection: Connection) {
 export async function fetchGsoDetails(connection: Connection, name?: string) {
   if (!name) return;
   const stakingOptions = new StakingOptions(connection.rpcEndpoint);
-  const data = await connection.getProgramAccounts(
-    new PublicKey(GSO_PROGRAM_ID),
-    "confirmed"
-  );
+  const data = await connection.getProgramAccounts(GSO_PK);
   for (const acct of data) {
     if (acct.account.data.length !== GSO_STATE_SIZE) {
       continue;
