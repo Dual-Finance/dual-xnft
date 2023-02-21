@@ -69,7 +69,9 @@ export function readBigUInt64LE(buffer: Buffer, offset = 0) {
   return BigInt(lo) + (BigInt(hi) << BigInt(32));
 }
 
-export const bonkMintPk = new PublicKey('DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263');
+export const bonkMintPk = new PublicKey(
+  "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263"
+);
 export function parseGsoState(buf: Buffer) {
   const periodNum = Number(readBigUInt64LE(buf, 8));
   const subscriptionPeriodEnd = Number(readBigUInt64LE(buf, 16));
@@ -95,7 +97,7 @@ export function parseGsoState(buf: Buffer) {
   let baseMint = new PublicKey(
     buf.slice(soStateOffset + 64, soStateOffset + 64 + 32)
   );
-  if (baseMint.toBase58() === '11111111111111111111111111111111') {
+  if (baseMint.toBase58() === "11111111111111111111111111111111") {
     // Backwards compatibility hack.
     baseMint = bonkMintPk;
   }

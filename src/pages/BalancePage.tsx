@@ -54,7 +54,7 @@ function Balances() {
             const { symbol, image } = g.metadata;
             const { symbol: optionSymbol, image: optionImage } =
               g.optionMetadata;
-            const isExercisable = (g.expirationInt < now.valueOf());
+            const isExercisable = g.expirationInt < now.valueOf();
             return (
               <Link to={`/balance/${g.soName}`} key={g.soName}>
                 <Card>

@@ -78,7 +78,12 @@ function BalanceDetails() {
         })
         .catch(console.error);
     } else {
-      unstakeGSO(gsoBalanceDetails, amount * gsoBalanceDetails.baseAtoms, connection, wallet)
+      unstakeGSO(
+        gsoBalanceDetails,
+        amount * gsoBalanceDetails.baseAtoms,
+        connection,
+        wallet
+      )
         .then((signature) => {
           console.log("signature:", signature);
         })
@@ -91,11 +96,11 @@ function BalanceDetails() {
   const { symbol, image } = gsoBalanceDetails.metadata;
   const onMaxClick = isExercisable
     ? () => {
-      setStakeValue(gsoBalanceDetails.optionTokens.toString());
-    }
+        setStakeValue(gsoBalanceDetails.optionTokens.toString());
+      }
     : () => {
-      setStakeValue(gsoBalanceDetails.numTokens.toString());
-    };
+        setStakeValue(gsoBalanceDetails.numTokens.toString());
+      };
   const precision = gsoBalanceDetails?.baseAtoms;
   return (
     <div className="flex flex-col gap-2">

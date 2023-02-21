@@ -102,7 +102,7 @@ export async function fetchGsoBalance(
       const optionTokens =
         optionAccounts.array[0].data.parsed.info.tokenAmount.amount /
         10 **
-        Number(optionAccounts.array[0].data.parsed.info.tokenAmount.decimals);
+          Number(optionAccounts.array[0].data.parsed.info.tokenAmount.decimals);
       const optionPda = await getMetadataPDA(optionMint);
       const optionMetadata = await Metadata.fromAccountAddress(
         connection,
@@ -114,7 +114,7 @@ export async function fetchGsoBalance(
       const numTokens =
         tokenAccounts.array[i].data.parsed.info.tokenAmount.amount /
         10 **
-        Number(tokenAccounts.array[i].data.parsed.info.tokenAmount.decimals);
+          Number(tokenAccounts.array[i].data.parsed.info.tokenAmount.decimals);
 
       if (numTokens === 0) {
         continue;
