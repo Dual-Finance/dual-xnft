@@ -1,5 +1,4 @@
 import { Transition } from "@headlessui/react";
-import { useConnection } from "@solana/wallet-adapter-react";
 import { useQuery } from "@tanstack/react-query";
 import { Suspense } from "react";
 import { FaChevronRight } from "react-icons/fa";
@@ -8,7 +7,6 @@ import { queryClient } from "../client";
 import { Card } from "../components/Card";
 import { Loading } from "../components/Loading";
 import { fetchGsoBalance } from "../hooks/useGsoBalance";
-import { fetchStakingOptionsBalance } from "../hooks/useStakingOptionsBalance";
 import { useWallet } from "../hooks/useWallet";
 import { GsoBalanceParams } from "../types";
 import { getConnection, prettyFormatPrice } from "../utils";
@@ -16,7 +14,7 @@ import { getConnection, prettyFormatPrice } from "../utils";
 export async function loader() {
   return defer({
     gsoBalances: queryClient.fetchQuery({
-      queryKey: ["balance", "gso", window.xnft.solana.publicKey.toBase58()],
+      queryKey: ["balance", window.xnft.solana.publicKey.toBase58()],
       queryFn: () =>
         fetchGsoBalance(getConnection(), window.xnft.solana.publicKey),
     }),
@@ -39,8 +37,9 @@ export function BalancePage() {
 function Balances() {
   const { publicKey } = useWallet();
   const { data: gsoBalances } = useQuery<GsoBalanceParams[]>({
-    queryKey: ["balance", "gso", publicKey.toBase58()],
+    queryKey: ["balance", publicKey.toBase58()],
   });
+  const now = new Date();
   return (
     <Transition
       appear
@@ -52,8 +51,10 @@ function Balances() {
       <div role="list">
         {gsoBalances &&
           gsoBalances.map((g) => {
-            const { symbol } = g.metadata;
-            const { symbol: optionSymbol, image } = g.optionMetadata;
+            const { symbol, image } = g.metadata;
+            const { symbol: optionSymbol, image: optionImage } =
+              g.optionMetadata;
+            const isExercisable = g.expirationInt < now.valueOf();
             return (
               <Link to={`/balance/${g.soName}`} key={g.soName}>
                 <Card>
@@ -63,19 +64,23 @@ function Balances() {
                   >
                     <div className="relative">
                       <img
-                        src={image}
-                        alt={`${optionSymbol} icon`}
+                        src={isExercisable ? optionImage : image}
+                        alt={`${isExercisable ? optionSymbol : symbol} icon`}
                         className="w-10 h-10 rounded-full"
                       />
-                      <img
-                        src={g.metadata.image}
-                        alt={`${symbol} icon`}
-                        className="absolute w-5 h-5 -top-2 -right-2 rounded-full"
-                      />
+                      {isExercisable && (
+                        <img
+                          src={image}
+                          alt={`${symbol} icon`}
+                          className="absolute w-5 h-5 -top-2 -right-2 rounded-full"
+                        />
+                      )}
                     </div>
                     <div className="flex-1 text-left">
                       <div className="text-lg">
-                        {g.numTokens} {symbol.toUpperCase()}
+                        {isExercisable
+                          ? `${g.optionTokens} Options`
+                          : `${g.numTokens} ${symbol.toUpperCase()}`}
                       </div>
                       <p className="text-sm">
                         Strike: {prettyFormatPrice(g.strike, 8)}

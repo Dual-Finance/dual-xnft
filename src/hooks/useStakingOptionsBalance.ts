@@ -7,7 +7,7 @@ import {
   StakingOptions,
   STAKING_OPTIONS_PK,
 } from "@dual-finance/staking-options";
-import stakingOptionsIdl from "../config/staking_options.json";
+import stakingOptionsIdl from "@dual-finance/staking-options/lib/staking_options_idl.json";
 import { useWallet } from "./useWallet";
 import { GsoBalanceParams, SOState } from "../types";
 import { STAKING_OPTIONS_STATE_SIZE } from "../config";
@@ -58,7 +58,7 @@ export async function fetchStakingOptionsBalance(
       }
       stateAddresses.push(programAccount.pubkey.toBase58());
     }
-    const program = new Program(stakingOptionsIdl as Idl, STAKING_OPTIONS_PK);
+    const program = new Program(stakingOptionsIdl as Idl, STAKING_OPTIONS_PK, window.xnft.solana);
     const states = await program.account.state.fetchMultiple(stateAddresses);
 
     const stakingOptionsHelper = new StakingOptions(connection.rpcEndpoint);
@@ -98,7 +98,7 @@ export async function fetchStakingOptionsBalance(
         lotSize,
         baseDecimals,
         quoteDecimals,
-      } = states[i] as SOState;
+      } = states[i] as unknown as SOState;
 
       if (optionExpiration < Math.floor(Date.now() / 1_000)) {
         continue;
@@ -115,11 +115,14 @@ export async function fetchStakingOptionsBalance(
       );
       const soParams: GsoBalanceParams = {
         soName,
+        gsoName: soName,
         lotSize,
         numTokens: tokenAccountAmount(tokenAccounts[i]),
+        optionTokens: tokenAccountAmount(tokenAccounts[i]),
         expiration: new Date(optionExpiration * 1_000).toLocaleDateString(),
         expirationInt: optionExpiration,
         strike: (strikes[0] / lotSize) * 10 ** baseDecimals,
+        gsoStatePk: new PublicKey(stateAddresses[i]),
         soStatePk: new PublicKey(stateAddresses[i]),
         base: baseMint,
         quote: quoteMint,

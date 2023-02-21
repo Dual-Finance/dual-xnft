@@ -137,7 +137,7 @@ export async function unstakeGSO(
 }
 
 export async function exerciseSO(
-  { soName, base, quote }: GsoBalanceParams,
+  { gsoName, base, quote }: GsoBalanceParams,
   amount: number,
   connection: Connection,
   provider: WalletContextState,
@@ -146,13 +146,13 @@ export async function exerciseSO(
   if (!provider.publicKey) return;
   try {
     const so = new StakingOptions(connection.rpcEndpoint);
-    const soStateObj = await so.getState(soName, base);
+    const soStateObj = await so.getState(gsoName, base);
     // @ts-ignore
     const strikeState = soStateObj.strikes[0];
     const strikeAtomsPerLot = new BN(strikeState);
     const authority = provider.publicKey;
     // @ts-ignore
-    const optionMint = await so.soMint(strikeAtomsPerLot, soName, base);
+    const optionMint = await so.soMint(strikeAtomsPerLot, gsoName, base);
     const userSoAccount = await getAssociatedTokenAddress(
       optionMint,
       provider.publicKey
@@ -177,7 +177,7 @@ export async function exerciseSO(
     const exerciseInstruction = await so.createExerciseInstruction(
       new BN(amount),
       strikeAtomsPerLot,
-      soName,
+      gsoName,
       authority,
       userSoAccount,
       userQuoteAccount,

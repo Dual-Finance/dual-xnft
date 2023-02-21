@@ -29,17 +29,22 @@ const router = createBrowserRouter([
     element: <Layout />,
     errorElement: <ErrorPage />,
     children: [
-      { index: true, element: <HomePage />, loader: homeLoader },
-      { path: "gso/:name", element: <GsoPage />, loader: gsoLoader },
       {
-        path: "balance",
-        element: <BalancePage />,
-        loader: balanceLoader,
-      },
-      {
-        path: "balance/:name",
-        element: <BalanceDetailsPage />,
-        loader: balanceDetailsLoader,
+        errorElement: <ErrorPage />,
+        children: [
+          { index: true, element: <HomePage />, loader: homeLoader },
+          { path: "gso/:name", element: <GsoPage />, loader: gsoLoader },
+          {
+            path: "balance",
+            element: <BalancePage />,
+            loader: balanceLoader,
+          },
+          {
+            path: "balance/:name",
+            element: <BalanceDetailsPage />,
+            loader: balanceDetailsLoader,
+          },
+        ],
       },
     ],
   },

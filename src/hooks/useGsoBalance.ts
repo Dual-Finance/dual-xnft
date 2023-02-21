@@ -3,11 +3,11 @@ import { Connection, PublicKey } from "@solana/web3.js";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { getAssociatedTokenAddress, getMint } from "@solana/spl-token";
 import { GSO, GSO_PK } from "@dual-finance/gso";
+import { StakingOptions } from "@dual-finance/staking-options";
+import { Metadata, PROGRAM_ID } from "@metaplex-foundation/mpl-token-metadata";
 import { GSO_STATE_SIZE } from "../config";
 import { getMultipleTokenAccounts, parseGsoState } from "../utils";
-import { StakingOptions } from "@dual-finance/staking-options";
 import { GsoBalanceParams, SOState } from "../types";
-import { Metadata, PROGRAM_ID } from "@metaplex-foundation/mpl-token-metadata";
 
 export default function useGsoBalance() {
   const { connection } = useConnection();
@@ -61,20 +61,24 @@ export async function fetchGsoBalance(
       allTokenAccounts,
       "single"
     );
+    // const optionTokenAccounts = await getMultipleTokenAccounts(
+    //   connection,
+    //   allOptionTokenAccounts,
+    //   "single"
+    // );
+    // console.log(optionTokenAccounts.array);
     for (let i = 0; i < tokenAccounts.array.length; ++i) {
       if (!tokenAccounts.array[i]) {
         continue;
       }
       const acct = states[i];
-      const { soName, baseMint, lockupPeriodEnd, strike } = parseGsoState(
-        acct.account.data
-      );
+      const { soName, baseMint, lockupPeriodEnd, strike, stakingOptionsState } =
+        parseGsoState(acct.account.data);
       const gsoName = `GSO${soName}`;
-      const { lotSize, quoteMint, strikes }: SOState =
-        (await stakingOptions.getState(
-          gsoName,
-          baseMint
-        )) as unknown as SOState;
+      const { lotSize, quoteMint, strikes } = (await stakingOptions.getState(
+        gsoName,
+        baseMint
+      )) as unknown as SOState;
       const pda = await getMetadataPDA(baseMint);
       const metadata = await Metadata.fromAccountAddress(connection, pda);
       const tokenJson = await getTokenMetadata(
@@ -89,6 +93,12 @@ export async function fetchGsoBalance(
         gsoName,
         baseMint
       );
+      const optionAta = await getAssociatedTokenAddress(optionMint, publicKey);
+      const optionAccounts = await getMultipleTokenAccounts(connection, [optionAta.toBase58()], 'confirmed');
+      const optionTokens =
+        optionAccounts.array[0].data.parsed.info.tokenAmount.amount /
+        10 **
+        Number(optionAccounts.array[0].data.parsed.info.tokenAmount.decimals);
       const optionPda = await getMetadataPDA(optionMint);
       const optionMetadata = await Metadata.fromAccountAddress(
         connection,
@@ -100,7 +110,7 @@ export async function fetchGsoBalance(
       const numTokens =
         tokenAccounts.array[i].data.parsed.info.tokenAmount.amount /
         10 **
-          Number(tokenAccounts.array[i].data.parsed.info.tokenAmount.decimals);
+        Number(tokenAccounts.array[i].data.parsed.info.tokenAmount.decimals);
 
       if (numTokens === 0) {
         continue;
@@ -108,7 +118,9 @@ export async function fetchGsoBalance(
 
       const balanceParams: GsoBalanceParams = {
         soName,
+        gsoName,
         numTokens,
+        optionTokens,
         lotSize,
         baseAtoms,
         quoteAtoms,
@@ -116,7 +128,8 @@ export async function fetchGsoBalance(
         expirationInt: lockupPeriodEnd,
         strike: strikeInUSD,
         // Allow for SO State to be closed
-        soStatePk: acct.pubkey,
+        gsoStatePk: acct.pubkey,
+        soStatePk: stakingOptionsState,
         base: baseMint,
         quote: quoteMint,
         option: optionMint,
