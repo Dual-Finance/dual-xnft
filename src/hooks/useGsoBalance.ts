@@ -94,11 +94,15 @@ export async function fetchGsoBalance(
         baseMint
       );
       const optionAta = await getAssociatedTokenAddress(optionMint, publicKey);
-      const optionAccounts = await getMultipleTokenAccounts(connection, [optionAta.toBase58()], 'confirmed');
+      const optionAccounts = await getMultipleTokenAccounts(
+        connection,
+        [optionAta.toBase58()],
+        "confirmed"
+      );
       const optionTokens =
         optionAccounts.array[0].data.parsed.info.tokenAmount.amount /
         10 **
-        Number(optionAccounts.array[0].data.parsed.info.tokenAmount.decimals);
+          Number(optionAccounts.array[0].data.parsed.info.tokenAmount.decimals);
       const optionPda = await getMetadataPDA(optionMint);
       const optionMetadata = await Metadata.fromAccountAddress(
         connection,
@@ -110,7 +114,7 @@ export async function fetchGsoBalance(
       const numTokens =
         tokenAccounts.array[i].data.parsed.info.tokenAmount.amount /
         10 **
-        Number(tokenAccounts.array[i].data.parsed.info.tokenAmount.decimals);
+          Number(tokenAccounts.array[i].data.parsed.info.tokenAmount.decimals);
 
       if (numTokens === 0) {
         continue;

@@ -58,7 +58,11 @@ export async function fetchStakingOptionsBalance(
       }
       stateAddresses.push(programAccount.pubkey.toBase58());
     }
-    const program = new Program(stakingOptionsIdl as Idl, STAKING_OPTIONS_PK, window.xnft.solana);
+    const program = new Program(
+      stakingOptionsIdl as Idl,
+      STAKING_OPTIONS_PK,
+      window.xnft.solana
+    );
     const states = await program.account.state.fetchMultiple(stateAddresses);
 
     const stakingOptionsHelper = new StakingOptions(connection.rpcEndpoint);

@@ -81,11 +81,11 @@ function BalanceDetails() {
   const isExercisable = gsoBalanceDetails.expirationInt < new Date().valueOf();
   const onMaxClick = isExercisable
     ? () => {
-      setStakeValue(gsoBalanceDetails.optionTokens.toString());
-    }
+        setStakeValue(gsoBalanceDetails.optionTokens.toString());
+      }
     : () => {
-      setStakeValue(gsoBalanceDetails.numTokens.toString());
-    };
+        setStakeValue(gsoBalanceDetails.numTokens.toString());
+      };
   console.log(gsoBalanceDetails.baseAtoms);
   const precision = gsoBalanceDetails.baseAtoms;
   return (
@@ -115,7 +115,7 @@ function BalanceDetails() {
           <Card className="flex flex-col gap-2 bg-[#05040d]">
             <TokenInput
               type="number"
-              step={precision}
+              step={1 / 10 ** precision}
               placeholder="0.0"
               token={
                 isExercisable
@@ -140,15 +140,15 @@ function BalanceDetails() {
                 if (numberSegments.length !== 2) {
                   return;
                 }
-                const maxTokenDecimals = gsoBalanceDetails.baseAtoms.toString().length - 1;
+                const maxTokenDecimals =
+                  gsoBalanceDetails.baseAtoms.toString().length - 1;
                 console.log(maxTokenDecimals);
                 const inputDecimals = numberSegments[1].length;
                 console.log(inputDecimals);
                 const decimals = Math.min(inputDecimals, maxTokenDecimals);
                 console.log(decimals);
                 const sanitizedValue = Number(
-                  Math.floor(parseFloat(inputStr) * 10 ** decimals) /
-                  10 ** decimals
+                  (parseFloat(inputStr) * 10 ** decimals) / 10 ** decimals
                 ).toFixed(decimals);
                 console.log(sanitizedValue);
                 setStakeValue(sanitizedValue);
