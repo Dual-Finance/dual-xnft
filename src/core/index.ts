@@ -14,11 +14,13 @@ import {
   getAssociatedTokenAddress,
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
+  getMint,
 } from "@solana/spl-token";
 import { StakingOptions } from "@dual-finance/staking-options";
 import { GSO } from "@dual-finance/gso";
 import { GsoBalanceParams, GsoParams, SoBalanceParams } from "../types";
 import { queryClient } from "../client";
+import { BONK_MINT_MAINNET } from "../config";
 
 export async function stakeGso(
   { soName, base, gsoStatePk }: GsoParams,
@@ -300,6 +302,25 @@ export async function fetchTokenMetadata(
   return data;
 }
 
+export async function fetchMint(connection: Connection, mint: PublicKey) {
+  const data = queryClient.fetchQuery({
+    queryKey: ["getMint", mint.toBase58()],
+    queryFn: () => getMint(connection, mint),
+  });
+  return data;
+}
+
+export async function fetchProgramAccounts(
+  connection: Connection,
+  pk: PublicKey
+) {
+  const data = queryClient.fetchQuery({
+    queryKey: ["getProgramAccounts", pk.toBase58()],
+    queryFn: () => connection.getProgramAccounts(pk),
+  });
+  return data;
+}
+
 export function readBigUInt64LE(buffer: Buffer, offset = 0) {
   const first = buffer[offset];
   const last = buffer[offset + 7];
@@ -319,9 +340,6 @@ export function readBigUInt64LE(buffer: Buffer, offset = 0) {
   return BigInt(lo) + (BigInt(hi) << BigInt(32));
 }
 
-const bonkMintPk = new PublicKey(
-  "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263"
-);
 export function parseGsoState(buf: Buffer) {
   const periodNum = Number(readBigUInt64LE(buf, 8));
   const subscriptionPeriodEnd = Number(readBigUInt64LE(buf, 16));
@@ -349,7 +367,7 @@ export function parseGsoState(buf: Buffer) {
   );
   if (baseMint.toBase58() === "11111111111111111111111111111111") {
     // Backwards compatibility hack.
-    baseMint = bonkMintPk;
+    baseMint = new PublicKey(BONK_MINT_MAINNET);
   }
   let lockupPeriodEnd = Number(
     readBigUInt64LE(buf.slice(soStateOffset + 96, soStateOffset + 96 + 32))

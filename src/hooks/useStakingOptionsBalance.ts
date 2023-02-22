@@ -11,31 +11,29 @@ import stakingOptionsIdl from "@dual-finance/staking-options/lib/staking_options
 import { useWallet } from "./useWallet";
 import { SoBalanceParams, SOState } from "../types";
 import { STAKING_OPTIONS_STATE_SIZE } from "../config";
-import { getMultipleTokenAccounts, fetchTokenMetadata } from "../core";
-
-function tokenAccountAmount(tokenAccount: any): number {
-  const { amount } = tokenAccount.data.parsed.info.tokenAmount;
-  const { decimals } = tokenAccount.data.parsed.info.tokenAmount;
-  return amount / 10 ** decimals;
-}
+import {
+  getMultipleTokenAccounts,
+  fetchTokenMetadata,
+  fetchProgramAccounts,
+} from "../core";
 
 export default function useStakingOptionsBalance() {
   const { connection } = useConnection();
   const { publicKey } = useWallet();
 
-  const [stakingOptions, setStakingOptions] = useState<SoBalanceParams[]>([]);
+  const [soBalances, setSoBalances] = useState<SoBalanceParams[]>([]);
 
   useEffect(() => {
     fetchStakingOptionsBalance(connection, publicKey)
       .then((data) => {
         if (data) {
-          setStakingOptions(data);
+          setSoBalances(data);
         }
       })
       .catch(console.error);
   }, [connection, publicKey]);
 
-  return stakingOptions;
+  return soBalances;
 }
 
 export async function fetchStakingOptionsBalance(
@@ -48,7 +46,7 @@ export async function fetchStakingOptionsBalance(
 
   try {
     // Fetch all program accounts for SO.
-    const data = await connection.getProgramAccounts(STAKING_OPTIONS_PK);
+    const data = await fetchProgramAccounts(connection, STAKING_OPTIONS_PK);
     const allStakingOptionParams = [];
 
     const stateAddresses: Address[] = [];
@@ -159,4 +157,10 @@ export async function fetchStakingOptionBalanceDetails(
   if (balanceParams) {
     return balanceParams.find((p) => p.soName === name);
   }
+}
+
+function tokenAccountAmount(tokenAccount: any): number {
+  const { amount } = tokenAccount.data.parsed.info.tokenAmount;
+  const { decimals } = tokenAccount.data.parsed.info.tokenAmount;
+  return amount / 10 ** decimals;
 }

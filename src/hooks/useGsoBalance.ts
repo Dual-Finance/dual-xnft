@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { getAssociatedTokenAddress, getMint } from "@solana/spl-token";
+import { getAssociatedTokenAddress } from "@solana/spl-token";
 import { GSO, GSO_PK } from "@dual-finance/gso";
 import { StakingOptions } from "@dual-finance/staking-options";
 import { GSO_STATE_SIZE } from "../config";
@@ -9,6 +9,8 @@ import {
   getMultipleTokenAccounts,
   fetchTokenMetadata,
   parseGsoState,
+  fetchMint,
+  fetchProgramAccounts,
 } from "../core";
 import { GsoBalanceParams, SOState } from "../types";
 
@@ -16,19 +18,19 @@ export default function useGsoBalance() {
   const { connection } = useConnection();
   const { publicKey } = useWallet();
 
-  const [gso, setGso] = useState<GsoBalanceParams[]>([]);
+  const [gsoBalances, setGsoBalances] = useState<GsoBalanceParams[]>([]);
 
   useEffect(() => {
     fetchGsoBalance(connection, publicKey)
       .then((data) => {
         if (data) {
-          setGso(data);
+          setGsoBalances(data);
         }
       })
       .catch(console.error);
   }, [connection, publicKey]);
 
-  return { gso };
+  return gsoBalances;
 }
 
 export async function fetchGsoBalance(
@@ -40,7 +42,7 @@ export async function fetchGsoBalance(
   }
   try {
     // Fetch all program accounts for SO
-    const data = await connection.getProgramAccounts(GSO_PK);
+    const data = await fetchProgramAccounts(connection, GSO_PK);
     const allBalanceParams = [];
 
     const gsoHelper = new GSO(connection.rpcEndpoint);
@@ -82,7 +84,7 @@ export async function fetchGsoBalance(
         parseGsoState(acct.account.data);
       const gsoName = `GSO${soName}`;
       const tokenJson = await fetchTokenMetadata(connection, baseMint);
-      const baseAtoms = (await getMint(connection, baseMint)).decimals;
+      const baseAtoms = (await fetchMint(connection, baseMint)).decimals;
       let lotSize = 1_000_000; // canon lot size
       let quoteAtoms = 6; // default for USDC
       let soState;
@@ -118,7 +120,7 @@ export async function fetchGsoBalance(
       const { quoteMint, strikes } = soState;
       strikeInUSD =
         (strikes[0] / (10 ** quoteAtoms * lotSize)) * 10 ** baseAtoms;
-      quoteAtoms = (await getMint(connection, quoteMint)).decimals;
+      quoteAtoms = (await fetchMint(connection, quoteMint)).decimals;
       const optionMint = await stakingOptions.soMint(
         strikes[0],
         gsoName,

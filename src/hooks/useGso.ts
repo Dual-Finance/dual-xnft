@@ -1,13 +1,17 @@
 import { useEffect, useState } from "react";
 import { Connection } from "@solana/web3.js";
-import { getMint } from "@solana/spl-token";
 import { useConnection } from "@solana/wallet-adapter-react";
 import { StakingOptions } from "@dual-finance/staking-options";
 import { GSO_PK } from "@dual-finance/gso";
 
 import { GSO_STATE_SIZE } from "../config";
 import { GsoParams, SOState } from "../types";
-import { fetchTokenMetadata, parseGsoState } from "../core";
+import {
+  fetchMint,
+  fetchProgramAccounts,
+  fetchTokenMetadata,
+  parseGsoState,
+} from "../core";
 import { msToTimeLeft } from "../utils";
 
 export default function useGso() {
@@ -24,12 +28,12 @@ export default function useGso() {
     }
   }, [connection]);
 
-  return { gso };
+  return gso;
 }
 
 export async function fetchGso(connection: Connection) {
   const stakingOptions = new StakingOptions(connection.rpcEndpoint);
-  const data = await connection.getProgramAccounts(GSO_PK);
+  const data = await fetchProgramAccounts(connection, GSO_PK);
   const allGsoParams = [];
   for (const acct of data) {
     if (acct.account.data.length !== GSO_STATE_SIZE) {
@@ -65,8 +69,8 @@ export async function fetchGso(connection: Connection) {
     const tokenJson = await fetchTokenMetadata(connection, baseMint);
 
     // TODO: Cache mint decimals to avoid load on RPC provider.
-    const baseDecimals = (await getMint(connection, baseMint)).decimals;
-    const quoteDecimals = (await getMint(connection, quoteMint)).decimals;
+    const baseDecimals = (await fetchMint(connection, baseMint)).decimals;
+    const quoteDecimals = (await fetchMint(connection, quoteMint)).decimals;
 
     const timeLeft = msToTimeLeft(stakeTimeRemainingMs);
 
@@ -98,7 +102,7 @@ export async function fetchGso(connection: Connection) {
 export async function fetchGsoDetails(connection: Connection, name?: string) {
   if (!name) return;
   const stakingOptions = new StakingOptions(connection.rpcEndpoint);
-  const data = await connection.getProgramAccounts(GSO_PK);
+  const data = await fetchProgramAccounts(connection, GSO_PK);
   for (const acct of data) {
     if (acct.account.data.length !== GSO_STATE_SIZE) {
       continue;
@@ -126,8 +130,8 @@ export async function fetchGsoDetails(connection: Connection, name?: string) {
     const tokenJson = await fetchTokenMetadata(connection, baseMint);
 
     // TODO: Cache mint decimals to avoid load on RPC provider.
-    const baseDecimals = (await getMint(connection, baseMint)).decimals;
-    const quoteDecimals = (await getMint(connection, quoteMint)).decimals;
+    const baseDecimals = (await fetchMint(connection, baseMint)).decimals;
+    const quoteDecimals = (await fetchMint(connection, quoteMint)).decimals;
 
     const timeLeft = msToTimeLeft(stakeTimeRemainingMs);
 

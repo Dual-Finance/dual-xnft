@@ -11,8 +11,3 @@ export const NUM_SPL_ATOMS_PER_TOKEN: Record<string, number> = {
   [USDC_MINT_MAINNET]: 10 ** 6,
   [BONK_MINT_MAINNET]: 10 ** 5,
 };
-export const NUM_DECIMALS_PER_TOKEN: Record<string, number> = {
-  [WSOL_MINT]: 9,
-  [USDC_MINT_MAINNET]: 6,
-  [BONK_MINT_MAINNET]: 5,
-};
