@@ -1,14 +1,13 @@
 {
-  "name": "xnft",
+  "name": "dual-xnft",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "prettier:check": "yarn prettier --check .",
-    "start": "yarn build && npx xnft web",
+    "lint": "yarn prettier --check .",
     "bundle": "yarn build && npx xnft bundle"
   },
   "dependencies": {
