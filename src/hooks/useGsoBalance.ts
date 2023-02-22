@@ -95,7 +95,6 @@ export async function fetchGsoBalance(
         )) as unknown as SOState;
       } catch (err) {
         console.error(err);
-        console.log(strikeInUSD);
         const balanceParams: GsoBalanceParams = {
           soName,
           gsoName,
