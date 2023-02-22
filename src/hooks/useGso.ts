@@ -7,7 +7,7 @@ import { GSO_PK } from "@dual-finance/gso";
 
 import { GSO_STATE_SIZE } from "../config";
 import { GsoParams, SOState } from "../types";
-import { getTokenMetadata, parseGsoState } from "../core";
+import { fetchTokenMetadata, parseGsoState } from "../core";
 import { msToTimeLeft } from "../utils";
 
 export default function useGso() {
@@ -62,7 +62,7 @@ export async function fetchGso(connection: Connection) {
       baseMint
     )) as unknown as SOState;
     const { lotSize, quoteMint, optionExpiration } = soState;
-    const tokenJson = await getTokenMetadata(connection, baseMint);
+    const tokenJson = await fetchTokenMetadata(connection, baseMint);
 
     // TODO: Cache mint decimals to avoid load on RPC provider.
     const baseDecimals = (await getMint(connection, baseMint)).decimals;
@@ -123,7 +123,7 @@ export async function fetchGsoDetails(connection: Connection, name?: string) {
       baseMint
     )) as unknown as SOState;
     const { lotSize, quoteMint, optionExpiration } = soState;
-    const tokenJson = await getTokenMetadata(connection, baseMint);
+    const tokenJson = await fetchTokenMetadata(connection, baseMint);
 
     // TODO: Cache mint decimals to avoid load on RPC provider.
     const baseDecimals = (await getMint(connection, baseMint)).decimals;

@@ -1,14 +1,19 @@
 import { useConnection } from "@solana/wallet-adapter-react";
 import { useQuery } from "@tanstack/react-query";
 import { Suspense, useCallback, useMemo, useState } from "react";
-import { Await, defer, useLoaderData, useParams } from "react-router-dom";
+import {
+  Await,
+  defer,
+  useLoaderData,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
 import { queryClient } from "../client";
 import { Button } from "../components/Button";
 import { Card } from "../components/Card";
 import { CardLight } from "../components/CardLight";
 import { Loading } from "../components/Loading";
 import { TokenInput } from "../components/TokenInput";
-import { NUM_SPL_ATOMS_PER_TOKEN } from "../config";
 import { fetchGsoDetails } from "../hooks/useGso";
 import useTokenBalance from "../hooks/useTokenBalance";
 import { useWallet } from "../hooks/useWallet";
@@ -48,6 +53,7 @@ export function GsoPage() {
 }
 
 function GsoDetails() {
+  const navigate = useNavigate();
   const { name } = useParams();
   const { connection } = useConnection();
   const { data: gsoDetails } = useQuery<GsoParams>({
@@ -56,20 +62,21 @@ function GsoDetails() {
 
   const [stakeValue, setStakeValue] = useState("");
   const wallet = useWallet();
-  const handleStakeClick = useCallback(() => {
-    if (!connection || !gsoDetails) {
+  const handleStakeClick = useCallback(async () => {
+    if (!connection || !gsoDetails || !wallet) {
       return;
     }
 
-    // TODO: don't rely on hardcoded token decimal list
-    const amount =
-      Number(stakeValue) * NUM_SPL_ATOMS_PER_TOKEN[gsoDetails.base.toBase58()];
-    stakeGso(gsoDetails, amount, connection, wallet)
-      .then((signature) => {
-        console.log("signature:", signature);
-      })
-      .catch(console.error);
-  }, [gsoDetails, stakeValue, connection, wallet]);
+    const amount = Number(stakeValue) * 10 ** gsoDetails.baseAtoms;
+    try {
+      const signature = await stakeGso(gsoDetails, amount, connection, wallet);
+      console.info("signature:", signature);
+      await queryClient.invalidateQueries(["balance/so", wallet.publicKey]);
+      navigate("/balance");
+    } catch (err) {
+      console.error(err);
+    }
+  }, [gsoDetails, stakeValue, connection, wallet, name]);
 
   const tokenBalance = useTokenBalance(gsoDetails?.base.toBase58());
   const handleMaxClick = useCallback(() => {

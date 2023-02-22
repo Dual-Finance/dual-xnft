@@ -11,7 +11,7 @@ import stakingOptionsIdl from "@dual-finance/staking-options/lib/staking_options
 import { useWallet } from "./useWallet";
 import { SoBalanceParams, SOState } from "../types";
 import { STAKING_OPTIONS_STATE_SIZE } from "../config";
-import { getMultipleTokenAccounts, getTokenMetadata } from "../core";
+import { getMultipleTokenAccounts, fetchTokenMetadata } from "../core";
 
 function tokenAccountAmount(tokenAccount: any): number {
   const { amount } = tokenAccount.data.parsed.info.tokenAmount;
@@ -108,7 +108,7 @@ export async function fetchStakingOptionsBalance(
         baseDecimals,
         quoteDecimals,
       } = states[i] as unknown as SOState;
-      const tokenJson = await getTokenMetadata(connection, baseMint);
+      const tokenJson = await fetchTokenMetadata(connection, baseMint);
 
       if (optionExpiration < Math.floor(Date.now() / 1_000)) {
         continue;
@@ -125,7 +125,7 @@ export async function fetchStakingOptionsBalance(
       );
       const strikeInUSD =
         (strikes[0] / (10 ** quoteDecimals * lotSize)) * 10 ** baseDecimals;
-      const optionJson = await getTokenMetadata(connection, soMint);
+      const optionJson = await fetchTokenMetadata(connection, soMint);
       const soParams: SoBalanceParams = {
         soName,
         lotSize,

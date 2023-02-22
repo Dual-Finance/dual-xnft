@@ -1,7 +1,13 @@
 import { useConnection } from "@solana/wallet-adapter-react";
 import { useQuery } from "@tanstack/react-query";
 import { ChangeEvent, Suspense, useCallback, useState } from "react";
-import { Await, defer, useLoaderData, useParams } from "react-router-dom";
+import {
+  Await,
+  defer,
+  useLoaderData,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
 import { queryClient } from "../client";
 import { Button } from "../components/Button";
 import { Card } from "../components/Card";
@@ -54,6 +60,7 @@ export function StakingOptionBalancePage() {
 }
 
 function BalanceDetails() {
+  const navigate = useNavigate();
   const { name } = useParams();
   const wallet = useWallet();
   const { data: soBalanceDetails } = useQuery<SoBalanceParams>({
@@ -62,25 +69,33 @@ function BalanceDetails() {
   const { connection } = useConnection();
 
   const [stakeValue, setStakeValue] = useState("");
-  const handleStakeClick = useCallback(() => {
-    if (!connection || !wallet || !soBalanceDetails) {
+  const handleExerciseClick = useCallback(async () => {
+    if (!connection || !soBalanceDetails || !wallet) {
       return;
     }
 
     const amount = Number(parseFloat(stakeValue));
-    exerciseSO(soBalanceDetails, amount, connection, wallet)
-      .then((signature) => {
-        console.log("signature:", signature);
-      })
-      .catch(console.error);
-  }, [soBalanceDetails, stakeValue, connection, wallet]);
+    try {
+      const signature = await exerciseSO(
+        soBalanceDetails,
+        amount,
+        connection,
+        wallet
+      );
+      console.log("signature:", signature);
+      await queryClient.invalidateQueries(["balance/so", wallet.publicKey]);
+      await queryClient.invalidateQueries([
+        "balance/so",
+        wallet.publicKey,
+        name,
+      ]);
+      navigate("/balance");
+    } catch (err) {}
+  }, [soBalanceDetails, stakeValue, connection, wallet, name]);
 
   if (!soBalanceDetails) return null;
 
   const { symbol, image } = soBalanceDetails.metadata;
-  const onMaxClick = () => {
-    setStakeValue(soBalanceDetails.numTokens.toString());
-  };
   return (
     <div className="flex flex-col gap-2">
       {soBalanceDetails && (
@@ -104,17 +119,19 @@ function BalanceDetails() {
               max={soBalanceDetails.numTokens}
               placeholder="0.0"
               token={soBalanceDetails.optionMetadata}
+              value={stakeValue}
               onChange={(event: ChangeEvent<HTMLInputElement>) => {
                 const inputStr = event.target.value;
                 setStakeValue(
                   parseNumber(inputStr, soBalanceDetails.baseAtoms)
                 );
               }}
-              value={stakeValue}
-              onMaxClick={onMaxClick}
+              onMaxClick={() => {
+                setStakeValue(soBalanceDetails.numTokens.toString());
+              }}
             />
 
-            <Button onClick={handleStakeClick}>Exercise</Button>
+            <Button onClick={handleExerciseClick}>Exercise</Button>
           </Card>
         </>
       )}

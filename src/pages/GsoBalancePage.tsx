@@ -1,7 +1,13 @@
 import { useConnection } from "@solana/wallet-adapter-react";
 import { useQuery } from "@tanstack/react-query";
 import { ChangeEvent, Suspense, useCallback, useState } from "react";
-import { Await, defer, useLoaderData, useParams } from "react-router-dom";
+import {
+  Await,
+  defer,
+  useLoaderData,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
 import { queryClient } from "../client";
 import { Button } from "../components/Button";
 import { Card } from "../components/Card";
@@ -54,6 +60,7 @@ export function GsoBalancePage() {
 }
 
 function BalanceDetails() {
+  const navigate = useNavigate();
   const { name } = useParams();
   const wallet = useWallet();
   const { data: gsoBalanceDetails } = useQuery<GsoBalanceParams>({
@@ -62,27 +69,37 @@ function BalanceDetails() {
   const { connection } = useConnection();
 
   const [stakeValue, setStakeValue] = useState("");
-  const handleStakeClick = useCallback(() => {
-    if (!connection || !wallet || !gsoBalanceDetails) {
+  const handleUnstakeClick = useCallback(async () => {
+    if (!connection || !gsoBalanceDetails || !wallet) {
       return;
     }
 
     const amount = Number(
       parseFloat(stakeValue) * 10 ** gsoBalanceDetails.baseAtoms
     );
-    unstakeGSO(gsoBalanceDetails, amount, connection, wallet)
-      .then((signature) => {
-        console.log("signature:", signature);
-      })
-      .catch(console.error);
-  }, [gsoBalanceDetails, stakeValue, connection, wallet]);
+    try {
+      const signature = await unstakeGSO(
+        gsoBalanceDetails,
+        amount,
+        connection,
+        wallet
+      );
+      console.info("signature:", signature);
+      await queryClient.invalidateQueries(["balance/gso", wallet.publicKey]);
+      await queryClient.invalidateQueries([
+        "balance/gso",
+        wallet.publicKey,
+        name,
+      ]);
+      navigate("/balance");
+    } catch (err) {
+      console.error(err);
+    }
+  }, [gsoBalanceDetails, stakeValue, connection, wallet, name]);
 
   if (!gsoBalanceDetails) return null;
 
   const { symbol, image } = gsoBalanceDetails.metadata;
-  const onMaxClick = () => {
-    setStakeValue(gsoBalanceDetails.numTokens.toString());
-  };
   return (
     <div className="flex flex-col gap-2">
       {gsoBalanceDetails && (
@@ -110,17 +127,19 @@ function BalanceDetails() {
               max={gsoBalanceDetails.numTokens}
               placeholder="0.0"
               token={gsoBalanceDetails.metadata}
+              value={stakeValue}
               onChange={(event: ChangeEvent<HTMLInputElement>) => {
                 const inputStr = event.target.value;
                 setStakeValue(
                   parseNumber(inputStr, gsoBalanceDetails.baseAtoms)
                 );
               }}
-              value={stakeValue}
-              onMaxClick={onMaxClick}
+              onMaxClick={() => {
+                setStakeValue(gsoBalanceDetails.numTokens.toString());
+              }}
             />
 
-            <Button onClick={handleStakeClick}>Withdraw</Button>
+            <Button onClick={handleUnstakeClick}>Withdraw</Button>
           </Card>
         </>
       )}

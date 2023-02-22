@@ -7,7 +7,7 @@ import { StakingOptions } from "@dual-finance/staking-options";
 import { GSO_STATE_SIZE } from "../config";
 import {
   getMultipleTokenAccounts,
-  getTokenMetadata,
+  fetchTokenMetadata,
   parseGsoState,
 } from "../core";
 import { GsoBalanceParams, SOState } from "../types";
@@ -81,7 +81,7 @@ export async function fetchGsoBalance(
       const { soName, baseMint, lockupPeriodEnd, strike, stakingOptionsState } =
         parseGsoState(acct.account.data);
       const gsoName = `GSO${soName}`;
-      const tokenJson = await getTokenMetadata(connection, baseMint);
+      const tokenJson = await fetchTokenMetadata(connection, baseMint);
       const baseAtoms = (await getMint(connection, baseMint)).decimals;
       let lotSize = 1_000_000; // canon lot size
       let quoteAtoms = 6; // default for USDC
@@ -124,7 +124,7 @@ export async function fetchGsoBalance(
         gsoName,
         baseMint
       );
-      const optionJson = await getTokenMetadata(connection, optionMint);
+      const optionJson = await fetchTokenMetadata(connection, optionMint);
 
       const balanceParams: GsoBalanceParams = {
         soName,
