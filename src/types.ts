@@ -25,6 +25,7 @@ export interface GsoParams {
   gsoStatePk: PublicKey;
   soStatePk: PublicKey;
   base: PublicKey;
+  baseAtoms: number;
   soName: string;
   strike: number;
   lockupRatio: number;
@@ -38,16 +39,31 @@ export interface GsoBalanceParams {
   soStatePk: PublicKey;
   gsoStatePk: PublicKey;
   base: PublicKey;
-  quote: PublicKey;
-  option?: PublicKey;
+  quote?: PublicKey;
   baseAtoms: number;
-  quoteAtoms: number;
+  quoteAtoms?: number;
   soName: string;
   gsoName: string;
   strike: number;
   lotSize: number;
   numTokens: number;
-  optionTokens: number;
+  metadata?: any;
+  optionMetadata?: any;
+}
+
+export interface SoBalanceParams {
+  expiration: string;
+  expirationInt: number;
+  soStatePk: PublicKey;
+  base: PublicKey;
+  quote: PublicKey;
+  option: PublicKey;
+  baseAtoms: number;
+  quoteAtoms: number;
+  soName: string;
+  strike: number;
+  lotSize: number;
+  numTokens: number;
   metadata?: any;
   optionMetadata?: any;
 }

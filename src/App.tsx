@@ -10,9 +10,13 @@ import { HomePage, loader as homeLoader } from "./pages/HomePage";
 import { GsoPage, loader as gsoLoader } from "./pages/GsoPage";
 import { BalancePage, loader as balanceLoader } from "./pages/BalancePage";
 import {
-  BalanceDetailsPage,
-  loader as balanceDetailsLoader,
-} from "./pages/BalanceDetailsPage";
+  GsoBalancePage,
+  loader as gsoBalanceLoader,
+} from "./pages/GsoBalancePage";
+import {
+  StakingOptionBalancePage,
+  loader as soBalanceLoader,
+} from "./pages/StakingOptionBalancePage";
 import ErrorPage from "./pages/ErrorPage";
 import { queryClient } from "./client";
 import "./App.css";
@@ -40,9 +44,14 @@ const router = createBrowserRouter([
             loader: balanceLoader,
           },
           {
-            path: "balance/:name",
-            element: <BalanceDetailsPage />,
-            loader: balanceDetailsLoader,
+            path: "balance/gso/:name",
+            element: <GsoBalancePage />,
+            loader: gsoBalanceLoader,
+          },
+          {
+            path: "balance/so/:name",
+            element: <StakingOptionBalancePage />,
+            loader: soBalanceLoader,
           },
         ],
       },

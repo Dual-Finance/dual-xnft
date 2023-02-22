@@ -9,12 +9,12 @@ import { CardLight } from "../components/CardLight";
 import { Loading } from "../components/Loading";
 import { TokenInput } from "../components/TokenInput";
 import { NUM_SPL_ATOMS_PER_TOKEN } from "../config";
-import { stakeGso } from "../core";
 import { fetchGsoDetails } from "../hooks/useGso";
 import useTokenBalance from "../hooks/useTokenBalance";
 import { useWallet } from "../hooks/useWallet";
 import { GsoParams } from "../types";
-import { getConnection, prettyFormatPrice } from "../utils";
+import { stakeGso, getConnection } from "../core";
+import { parseNumber, prettyFormatPrice } from "../utils";
 
 type LoaderParams = {
   params: {
@@ -119,15 +119,14 @@ function GsoDetails() {
           <Card className="flex flex-col gap-2 bg-[#05040d]">
             <TokenInput
               placeholder="0.0"
+              step={1 / 10 ** gsoDetails.baseAtoms}
+              min={0}
+              max={tokenBalance}
               token={{ symbol, image }}
               onChange={(event) => {
-                if (
-                  !Number.isNaN(parseFloat(event.target.value)) ||
-                  event.target.value === "." ||
-                  event.target.value === ""
-                ) {
-                  setStakeValue(event.target.value);
-                }
+                setStakeValue(
+                  parseNumber(event.target.value, gsoDetails.baseAtoms)
+                );
               }}
               value={stakeValue}
               onMaxClick={handleMaxClick}

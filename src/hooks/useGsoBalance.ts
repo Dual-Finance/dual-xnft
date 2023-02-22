@@ -4,9 +4,12 @@ import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { getAssociatedTokenAddress, getMint } from "@solana/spl-token";
 import { GSO, GSO_PK } from "@dual-finance/gso";
 import { StakingOptions } from "@dual-finance/staking-options";
-import { Metadata, PROGRAM_ID } from "@metaplex-foundation/mpl-token-metadata";
 import { GSO_STATE_SIZE } from "../config";
-import { getMultipleTokenAccounts, parseGsoState } from "../utils";
+import {
+  getMultipleTokenAccounts,
+  getTokenMetadata,
+  parseGsoState,
+} from "../core";
 import { GsoBalanceParams, SOState } from "../types";
 
 export default function useGsoBalance() {
@@ -65,52 +68,6 @@ export async function fetchGsoBalance(
       if (!tokenAccounts.array[i]) {
         continue;
       }
-      const acct = states[i];
-      const { soName, baseMint, lockupPeriodEnd, strike, stakingOptionsState } =
-        parseGsoState(acct.account.data);
-      const gsoName = `GSO${soName}`;
-      let soState;
-      try {
-        soState = (await stakingOptions.getState(
-          gsoName,
-          baseMint
-        )) as unknown as SOState;
-      } catch (err) {
-        continue;
-      }
-      const { lotSize, quoteMint, strikes } = soState;
-      const pda = await getMetadataPDA(baseMint);
-      const metadata = await Metadata.fromAccountAddress(connection, pda);
-      const tokenJson = await getTokenMetadata(
-        metadata.data.uri.replace(/\0.*$/g, "")
-      );
-      const baseAtoms = (await getMint(connection, baseMint)).decimals;
-      const quoteAtoms = (await getMint(connection, quoteMint)).decimals;
-      const strikeInUSD =
-        (strike / (10 ** quoteAtoms * lotSize)) * 10 ** baseAtoms;
-      const optionMint = await stakingOptions.soMint(
-        strikes[0],
-        gsoName,
-        baseMint
-      );
-      const optionAta = await getAssociatedTokenAddress(optionMint, publicKey);
-      const optionAccounts = await getMultipleTokenAccounts(
-        connection,
-        [optionAta.toBase58()],
-        "confirmed"
-      );
-      const optionTokens =
-        optionAccounts.array[0].data.parsed.info.tokenAmount.amount /
-        10 **
-          Number(optionAccounts.array[0].data.parsed.info.tokenAmount.decimals);
-      const optionPda = await getMetadataPDA(optionMint);
-      const optionMetadata = await Metadata.fromAccountAddress(
-        connection,
-        optionPda
-      );
-      const optionJson = await getTokenMetadata(
-        optionMetadata.data.uri.replace(/\0.*$/g, "")
-      );
       const numTokens =
         tokenAccounts.array[i].data.parsed.info.tokenAmount.amount /
         10 **
@@ -120,25 +77,70 @@ export async function fetchGsoBalance(
         continue;
       }
 
+      const acct = states[i];
+      const { soName, baseMint, lockupPeriodEnd, strike, stakingOptionsState } =
+        parseGsoState(acct.account.data);
+      const gsoName = `GSO${soName}`;
+      const tokenJson = await getTokenMetadata(connection, baseMint);
+      const baseAtoms = (await getMint(connection, baseMint)).decimals;
+      let lotSize = 1_000_000; // canon lot size
+      let quoteAtoms = 6; // default for USDC
+      let soState;
+      let strikeInUSD =
+        (strike / (10 ** quoteAtoms * lotSize)) * 10 ** baseAtoms;
+      try {
+        soState = (await stakingOptions.getState(
+          gsoName,
+          baseMint
+        )) as unknown as SOState;
+      } catch (err) {
+        console.error(err);
+        console.log(strikeInUSD);
+        const balanceParams: GsoBalanceParams = {
+          soName,
+          gsoName,
+          numTokens,
+          lotSize,
+          baseAtoms,
+          quoteAtoms,
+          expiration: new Date(lockupPeriodEnd * 1_000).toLocaleDateString(),
+          expirationInt: lockupPeriodEnd,
+          strike: strikeInUSD,
+          // Allow for SO State to be closed
+          gsoStatePk: acct.pubkey,
+          soStatePk: stakingOptionsState,
+          base: baseMint,
+          metadata: tokenJson,
+        };
+        allBalanceParams.push(balanceParams);
+        continue;
+      }
+      lotSize = soState.lotSize;
+      const { quoteMint, strikes } = soState;
+      strikeInUSD =
+        (strikes[0] / (10 ** quoteAtoms * lotSize)) * 10 ** baseAtoms;
+      quoteAtoms = (await getMint(connection, quoteMint)).decimals;
+      const optionMint = await stakingOptions.soMint(
+        strikes[0],
+        gsoName,
+        baseMint
+      );
+      const optionJson = await getTokenMetadata(connection, optionMint);
+
       const balanceParams: GsoBalanceParams = {
         soName,
         gsoName,
         numTokens,
-        optionTokens,
         lotSize,
         baseAtoms,
-        quoteAtoms,
         expiration: new Date(lockupPeriodEnd * 1_000).toLocaleDateString(),
         expirationInt: lockupPeriodEnd,
         strike: strikeInUSD,
-        // Allow for SO State to be closed
         gsoStatePk: acct.pubkey,
         soStatePk: stakingOptionsState,
         base: baseMint,
-        quote: quoteMint,
-        option: optionMint,
         metadata: tokenJson,
-        optionMetadata: { symbol: gsoName, ...optionJson },
+        optionMetadata: optionJson,
       };
       allBalanceParams.push(balanceParams);
     }
@@ -157,18 +159,4 @@ export async function fetchGsoBalanceDetails(
   if (balanceParams) {
     return balanceParams.find((p) => p.soName === name);
   }
-}
-
-async function getMetadataPDA(mint: PublicKey) {
-  const [publicKey] = PublicKey.findProgramAddressSync(
-    [Buffer.from("metadata"), PROGRAM_ID.toBuffer(), mint.toBuffer()],
-    PROGRAM_ID
-  );
-  return publicKey;
-}
-
-async function getTokenMetadata(uri: string) {
-  const data = await fetch(uri);
-  const json = await data.json();
-  return json;
 }

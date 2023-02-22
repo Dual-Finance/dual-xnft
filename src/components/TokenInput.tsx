@@ -12,6 +12,9 @@ export function TokenInput({
   type,
   value,
   onChange,
+  step,
+  min,
+  max,
   placeholder,
   onMaxClick,
   token,
@@ -32,6 +35,9 @@ export function TokenInput({
           type={type}
           value={value}
           onChange={onChange}
+          step={step}
+          min={min}
+          max={max}
           className="flex-1 min-w-0 h-7 bg-transparent border-0 text-lg font-bold text-[rgba(#ffffff, 0.5)]"
         />
         {onMaxClick && (

@@ -10,7 +10,8 @@ import { Loading } from "../components/Loading";
 import { Logo } from "../components/Logo";
 import { fetchGso } from "../hooks/useGso";
 import { GsoParams } from "../types";
-import { getConnection, prettyFormatPrice } from "../utils";
+import { getConnection } from "../core";
+import { prettyFormatPrice } from "../utils";
 
 export async function loader() {
   return defer({
@@ -54,7 +55,7 @@ function GsoList() {
             const { symbol, image } = g.metadata;
             return (
               <Link to={`/gso/${g.soName}`} key={g.soName}>
-                <Card>
+                <Card className="mb-2">
                   <div
                     role="listitem"
                     className="flex gap-2 items-center text-white"

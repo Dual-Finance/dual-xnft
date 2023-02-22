@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
-import { Connection, PublicKey } from "@solana/web3.js";
+import { Connection } from "@solana/web3.js";
 import { getMint } from "@solana/spl-token";
 import { useConnection } from "@solana/wallet-adapter-react";
-import { Metadata, PROGRAM_ID } from "@metaplex-foundation/mpl-token-metadata";
 import { StakingOptions } from "@dual-finance/staking-options";
 import { GSO_PK } from "@dual-finance/gso";
 
 import { GSO_STATE_SIZE } from "../config";
 import { GsoParams, SOState } from "../types";
-import { msToTimeLeft, parseGsoState } from "../utils";
+import { getTokenMetadata, parseGsoState } from "../core";
+import { msToTimeLeft } from "../utils";
 
 export default function useGso() {
   const { connection } = useConnection();
@@ -62,11 +62,7 @@ export async function fetchGso(connection: Connection) {
       baseMint
     )) as unknown as SOState;
     const { lotSize, quoteMint, optionExpiration } = soState;
-    const pda = await getMetadataPDA(baseMint);
-    const metadata = await Metadata.fromAccountAddress(connection, pda);
-    const tokenJson = await getTokenMetadata(
-      metadata.data.uri.replace(/\0.*$/g, "")
-    );
+    const tokenJson = await getTokenMetadata(connection, baseMint);
 
     // TODO: Cache mint decimals to avoid load on RPC provider.
     const baseDecimals = (await getMint(connection, baseMint)).decimals;
@@ -88,6 +84,7 @@ export async function fetchGso(connection: Connection) {
       subscription: timeLeft,
       subscriptionInt: subscriptionPeriodEnd,
       base: baseMint,
+      baseAtoms: baseDecimals,
       strike: strikeInUSD,
       gsoStatePk: acct.pubkey,
       soStatePk: stakingOptionsState,
@@ -126,11 +123,7 @@ export async function fetchGsoDetails(connection: Connection, name?: string) {
       baseMint
     )) as unknown as SOState;
     const { lotSize, quoteMint, optionExpiration } = soState;
-    const pda = await getMetadataPDA(baseMint);
-    const metadata = await Metadata.fromAccountAddress(connection, pda);
-    const tokenJson = await getTokenMetadata(
-      metadata.data.uri.replace(/\0.*$/g, "")
-    );
+    const tokenJson = await getTokenMetadata(connection, baseMint);
 
     // TODO: Cache mint decimals to avoid load on RPC provider.
     const baseDecimals = (await getMint(connection, baseMint)).decimals;
@@ -152,6 +145,7 @@ export async function fetchGsoDetails(connection: Connection, name?: string) {
       subscription: timeLeft,
       subscriptionInt: subscriptionPeriodEnd,
       base: baseMint,
+      baseAtoms: baseDecimals,
       strike: strikeInUSD,
       gsoStatePk: acct.pubkey,
       soStatePk: stakingOptionsState,
@@ -159,18 +153,4 @@ export async function fetchGsoDetails(connection: Connection, name?: string) {
     };
     return gsoParams;
   }
-}
-
-async function getMetadataPDA(mint: PublicKey) {
-  const [publicKey] = PublicKey.findProgramAddressSync(
-    [Buffer.from("metadata"), PROGRAM_ID.toBuffer(), mint.toBuffer()],
-    PROGRAM_ID
-  );
-  return publicKey;
-}
-
-async function getTokenMetadata(uri: string) {
-  const data = await fetch(uri);
-  const json = await data.json();
-  return json;
 }

@@ -7,11 +7,11 @@ import { Button } from "../components/Button";
 import { Card } from "../components/Card";
 import { Loading } from "../components/Loading";
 import { TokenInput } from "../components/TokenInput";
-import { exerciseSO, unstakeGSO } from "../core";
 import { fetchGsoBalanceDetails } from "../hooks/useGsoBalance";
 import { useWallet } from "../hooks/useWallet";
+import { unstakeGSO, getConnection } from "../core";
 import { GsoBalanceParams } from "../types";
-import { getConnection, prettyFormatPrice } from "../utils";
+import { parseNumber } from "../utils";
 
 type LoaderParams = {
   params: {
@@ -26,7 +26,7 @@ export async function loader({ params }: LoaderParams) {
   return defer({
     gsoBalanceDetails: queryClient.fetchQuery({
       queryKey: [
-        "balance",
+        "balance/gso",
         window.xnft.solana.publicKey.toBase58(),
         params.name,
       ],
@@ -40,7 +40,7 @@ export async function loader({ params }: LoaderParams) {
   });
 }
 
-export function BalanceDetailsPage() {
+export function GsoBalancePage() {
   const data = useLoaderData() as any;
   return (
     <div className="h-full">
@@ -57,51 +57,32 @@ function BalanceDetails() {
   const { name } = useParams();
   const wallet = useWallet();
   const { data: gsoBalanceDetails } = useQuery<GsoBalanceParams>({
-    queryKey: ["balance", wallet.publicKey.toBase58(), name],
+    queryKey: ["balance/gso", wallet.publicKey.toBase58(), name],
   });
   const { connection } = useConnection();
 
   const [stakeValue, setStakeValue] = useState("");
-  const now = new Date();
-  const isExercisable =
-    (gsoBalanceDetails?.expirationInt || now.valueOf()) < now.valueOf();
   const handleStakeClick = useCallback(() => {
     if (!connection || !wallet || !gsoBalanceDetails) {
       return;
     }
 
-    const amount = Number(parseFloat(stakeValue));
-    if (isExercisable) {
-      exerciseSO(gsoBalanceDetails, amount, connection, wallet)
-        .then((signature) => {
-          console.log("signature:", signature);
-        })
-        .catch(console.error);
-    } else {
-      unstakeGSO(
-        gsoBalanceDetails,
-        amount * gsoBalanceDetails.baseAtoms,
-        connection,
-        wallet
-      )
-        .then((signature) => {
-          console.log("signature:", signature);
-        })
-        .catch(console.error);
-    }
+    const amount = Number(
+      parseFloat(stakeValue) * 10 ** gsoBalanceDetails.baseAtoms
+    );
+    unstakeGSO(gsoBalanceDetails, amount, connection, wallet)
+      .then((signature) => {
+        console.log("signature:", signature);
+      })
+      .catch(console.error);
   }, [gsoBalanceDetails, stakeValue, connection, wallet]);
 
   if (!gsoBalanceDetails) return null;
 
   const { symbol, image } = gsoBalanceDetails.metadata;
-  const onMaxClick = isExercisable
-    ? () => {
-        setStakeValue(gsoBalanceDetails.optionTokens.toString());
-      }
-    : () => {
-        setStakeValue(gsoBalanceDetails.numTokens.toString());
-      };
-  const precision = gsoBalanceDetails?.baseAtoms;
+  const onMaxClick = () => {
+    setStakeValue(gsoBalanceDetails.numTokens.toString());
+  };
   return (
     <div className="flex flex-col gap-2">
       {gsoBalanceDetails && (
@@ -113,15 +94,10 @@ function BalanceDetails() {
                 <h2 className="text-lg font-bold">
                   {gsoBalanceDetails.soName}
                 </h2>
-                {isExercisable ? (
-                  <p>Options: {gsoBalanceDetails.optionTokens}</p>
-                ) : (
-                  <p>
-                    Collateral: {gsoBalanceDetails.numTokens}{" "}
-                    {symbol?.toUpperCase()}
-                  </p>
-                )}
-                <p>Strike: {prettyFormatPrice(gsoBalanceDetails.strike, 8)}</p>
+                <p>
+                  Collateral: {gsoBalanceDetails.numTokens}{" "}
+                  {symbol?.toUpperCase()}
+                </p>
                 <p>Expires: {gsoBalanceDetails.expiration}</p>
               </div>
             </div>
@@ -129,30 +105,22 @@ function BalanceDetails() {
           <Card className="flex flex-col gap-2 bg-[#05040d]">
             <TokenInput
               type="number"
-              step={1 / 10 ** precision}
+              step={1 / 10 ** gsoBalanceDetails.baseAtoms}
+              min={0}
+              max={gsoBalanceDetails.numTokens}
               placeholder="0.0"
-              token={
-                isExercisable
-                  ? gsoBalanceDetails.optionMetadata
-                  : gsoBalanceDetails.metadata
-              }
+              token={gsoBalanceDetails.metadata}
               onChange={(event: ChangeEvent<HTMLInputElement>) => {
                 const inputStr = event.target.value;
-                if (
-                  !Number.isNaN(parseFloat(inputStr)) ||
-                  inputStr === "." ||
-                  inputStr === ""
-                ) {
-                  setStakeValue(inputStr);
-                }
+                setStakeValue(
+                  parseNumber(inputStr, gsoBalanceDetails.baseAtoms)
+                );
               }}
               value={stakeValue}
               onMaxClick={onMaxClick}
             />
 
-            <Button onClick={handleStakeClick}>
-              {isExercisable ? "Exercise" : "Withdraw"}
-            </Button>
+            <Button onClick={handleStakeClick}>Withdraw</Button>
           </Card>
         </>
       )}

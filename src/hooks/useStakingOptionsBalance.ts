@@ -2,16 +2,16 @@ import { useEffect, useState } from "react";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { useConnection } from "@solana/wallet-adapter-react";
 import { getAssociatedTokenAddress } from "@solana/spl-token";
-import { Address, Idl, Program } from "@project-serum/anchor";
+import { Address, AnchorProvider, Idl, Program } from "@project-serum/anchor";
 import {
   StakingOptions,
   STAKING_OPTIONS_PK,
 } from "@dual-finance/staking-options";
 import stakingOptionsIdl from "@dual-finance/staking-options/lib/staking_options_idl.json";
 import { useWallet } from "./useWallet";
-import { GsoBalanceParams, SOState } from "../types";
+import { SoBalanceParams, SOState } from "../types";
 import { STAKING_OPTIONS_STATE_SIZE } from "../config";
-import { getMultipleTokenAccounts } from "../utils";
+import { getMultipleTokenAccounts, getTokenMetadata } from "../core";
 
 function tokenAccountAmount(tokenAccount: any): number {
   const { amount } = tokenAccount.data.parsed.info.tokenAmount;
@@ -23,17 +23,19 @@ export default function useStakingOptionsBalance() {
   const { connection } = useConnection();
   const { publicKey } = useWallet();
 
-  const [stakingOptions, setStakingOptions] = useState<GsoBalanceParams[]>([]);
+  const [stakingOptions, setStakingOptions] = useState<SoBalanceParams[]>([]);
 
   useEffect(() => {
-    fetchStakingOptionsBalance(connection, publicKey).then((data) => {
-      if (data) {
-        setStakingOptions(data);
-      }
-    });
+    fetchStakingOptionsBalance(connection, publicKey)
+      .then((data) => {
+        if (data) {
+          setStakingOptions(data);
+        }
+      })
+      .catch(console.error);
   }, [connection, publicKey]);
 
-  return { stakingOptions };
+  return stakingOptions;
 }
 
 export async function fetchStakingOptionsBalance(
@@ -58,10 +60,13 @@ export async function fetchStakingOptionsBalance(
       }
       stateAddresses.push(programAccount.pubkey.toBase58());
     }
+    const provider = new AnchorProvider(connection, window.xnft.solana, {
+      commitment: "confirmed",
+    });
     const program = new Program(
       stakingOptionsIdl as Idl,
       STAKING_OPTIONS_PK,
-      window.xnft.solana
+      provider
     );
     const states = await program.account.state.fetchMultiple(stateAddresses);
 
@@ -103,6 +108,7 @@ export async function fetchStakingOptionsBalance(
         baseDecimals,
         quoteDecimals,
       } = states[i] as unknown as SOState;
+      const tokenJson = await getTokenMetadata(connection, baseMint);
 
       if (optionExpiration < Math.floor(Date.now() / 1_000)) {
         continue;
@@ -117,27 +123,40 @@ export async function fetchStakingOptionsBalance(
         soName,
         baseMint
       );
-      const soParams: GsoBalanceParams = {
+      const strikeInUSD =
+        (strikes[0] / (10 ** quoteDecimals * lotSize)) * 10 ** baseDecimals;
+      const optionJson = await getTokenMetadata(connection, soMint);
+      const soParams: SoBalanceParams = {
         soName,
-        gsoName: soName,
         lotSize,
         numTokens: tokenAccountAmount(tokenAccounts[i]),
-        optionTokens: tokenAccountAmount(tokenAccounts[i]),
         expiration: new Date(optionExpiration * 1_000).toLocaleDateString(),
         expirationInt: optionExpiration,
-        strike: (strikes[0] / lotSize) * 10 ** baseDecimals,
-        gsoStatePk: new PublicKey(stateAddresses[i]),
+        strike: strikeInUSD,
         soStatePk: new PublicKey(stateAddresses[i]),
         base: baseMint,
         quote: quoteMint,
         option: soMint,
         baseAtoms: baseDecimals,
         quoteAtoms: quoteDecimals,
+        metadata: tokenJson,
+        optionMetadata: optionJson,
       };
       allStakingOptionParams.push(soParams);
     }
     return allStakingOptionParams;
   } catch (err) {
     console.error(err);
+  }
+}
+
+export async function fetchStakingOptionBalanceDetails(
+  connection: Connection,
+  publicKey: PublicKey,
+  name?: string
+) {
+  const balanceParams = await fetchStakingOptionsBalance(connection, publicKey);
+  if (balanceParams) {
+    return balanceParams.find((p) => p.soName === name);
   }
 }
