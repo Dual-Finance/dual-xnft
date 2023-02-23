@@ -90,7 +90,7 @@ function BalanceDetails() {
         name,
       ]);
       navigate("/balance");
-    } catch (err) { }
+    } catch (err) {}
   }, [soBalanceDetails, stakeValue, connection, wallet, name]);
   const step = useMemo(() => {
     if (soBalanceDetails) return 1 / 10 ** soBalanceDetails.baseAtoms;

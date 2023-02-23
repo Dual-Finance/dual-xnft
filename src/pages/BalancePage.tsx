@@ -89,7 +89,9 @@ function Balances() {
                         />
                       </div>
                       <div className="flex-1 text-left">
-                        <div className="text-lg">{g.numTokens} Staking Options</div>
+                        <div className="text-lg">
+                          {g.numTokens} Staking Options
+                        </div>
                         <p className="text-sm">
                           Strike: {prettyFormatPrice(g.strike, 8)}
                         </p>
