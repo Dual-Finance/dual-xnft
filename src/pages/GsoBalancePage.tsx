@@ -1,6 +1,6 @@
 import { useConnection } from "@solana/wallet-adapter-react";
 import { useQuery } from "@tanstack/react-query";
-import { ChangeEvent, Suspense, useCallback, useState } from "react";
+import { ChangeEvent, Suspense, useCallback, useMemo, useState } from "react";
 import {
   Await,
   defer,
@@ -96,6 +96,22 @@ function BalanceDetails() {
       console.error(err);
     }
   }, [gsoBalanceDetails, stakeValue, connection, wallet, name]);
+  const step = useMemo(() => {
+    if (gsoBalanceDetails) return 1 / 10 ** gsoBalanceDetails.baseAtoms;
+  }, [gsoBalanceDetails]);
+  const isDisabled = useMemo(() => {
+    const value = parseFloat(stakeValue);
+    if (
+      !gsoBalanceDetails ||
+      !value ||
+      !step ||
+      value > gsoBalanceDetails.numTokens ||
+      value < step
+    ) {
+      return true;
+    }
+    return false;
+  }, [stakeValue, gsoBalanceDetails, step]);
 
   if (!gsoBalanceDetails) return null;
 
@@ -122,8 +138,8 @@ function BalanceDetails() {
           <Card className="flex flex-col gap-2 bg-[#05040d]">
             <TokenInput
               type="number"
-              step={1 / 10 ** gsoBalanceDetails.baseAtoms}
-              min={0}
+              step={step}
+              min={step}
               max={gsoBalanceDetails.numTokens}
               placeholder="0.0"
               token={gsoBalanceDetails.metadata}
@@ -139,7 +155,13 @@ function BalanceDetails() {
               }}
             />
 
-            <Button onClick={handleUnstakeClick}>Withdraw</Button>
+            <Button
+              className={isDisabled ? "bg-gray-400" : undefined}
+              disabled={isDisabled}
+              onClick={handleUnstakeClick}
+            >
+              Unstake
+            </Button>
           </Card>
         </>
       )}

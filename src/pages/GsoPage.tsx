@@ -92,21 +92,28 @@ function GsoDetails() {
     }
     return 0;
   }, [stakeValue, gsoDetails]);
+  const step = useMemo(() => {
+    if (gsoDetails)
+      return (
+        gsoDetails.lotSize / 10 ** gsoDetails.baseAtoms / gsoDetails.lockupRatio
+      );
+  }, [gsoDetails]);
   const isDisabled = useMemo(() => {
     const value = parseFloat(stakeValue);
-    if (!tokenBalance || !value || value > tokenBalance) {
+    if (
+      !tokenBalance ||
+      !value ||
+      !step ||
+      value > tokenBalance ||
+      value < step
+    ) {
       return true;
     }
     return false;
-  }, [stakeValue, tokenBalance]);
-  const { symbol, image } = gsoDetails?.metadata;
-  // const stakedToken = symbol.toUpperCase();
-  // const startDate = gsoDetails?.expirationInt
-  //   ? new Date(gsoDetails.expirationInt * 1000).toISOString().slice(0, 10)
-  //   : "<expiration>";
-  // const tokenName = `${stakedToken || "<token>"}-${startDate}@${
-  //   gsoDetails?.strike
-  // }`;
+  }, [stakeValue, tokenBalance, step]);
+
+  if (!gsoDetails) return null;
+  const { symbol, image } = gsoDetails.metadata;
   return (
     <div className="flex flex-col gap-2">
       {gsoDetails && (
@@ -119,15 +126,16 @@ function GsoDetails() {
                 <p>Stake: {symbol.toUpperCase()}</p>
                 <p>Strike: {prettyFormatPrice(gsoDetails.strike, 8)}</p>
                 <p>Expires: {gsoDetails.expiration}</p>
-                <p>Lockup Ratio: {1 / gsoDetails.lockupRatio}:1</p>
+                <p>Lockup Ratio: {gsoDetails.lockupRatio}</p>
               </div>
             </div>
           </Card>
           <Card className="flex flex-col gap-2 bg-[#05040d]">
             <TokenInput
+              type="number"
               placeholder="0.0"
-              step={1 / 10 ** gsoDetails.baseAtoms}
-              min={0}
+              step={step}
+              min={step}
               max={tokenBalance}
               token={{ symbol, image }}
               onChange={(event) => {
@@ -149,7 +157,11 @@ function GsoDetails() {
               </div>
             </CardLight>
 
-            <Button onClick={handleStakeClick} disabled={isDisabled}>
+            <Button
+              className={isDisabled ? "bg-gray-400" : undefined}
+              onClick={handleStakeClick}
+              disabled={isDisabled}
+            >
               Stake {symbol.toUpperCase()}
             </Button>
           </Card>

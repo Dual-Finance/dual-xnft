@@ -1,6 +1,6 @@
 import { useConnection } from "@solana/wallet-adapter-react";
 import { useQuery } from "@tanstack/react-query";
-import { ChangeEvent, Suspense, useCallback, useState } from "react";
+import { ChangeEvent, Suspense, useCallback, useMemo, useState } from "react";
 import {
   Await,
   defer,
@@ -90,8 +90,24 @@ function BalanceDetails() {
         name,
       ]);
       navigate("/balance");
-    } catch (err) {}
+    } catch (err) { }
   }, [soBalanceDetails, stakeValue, connection, wallet, name]);
+  const step = useMemo(() => {
+    if (soBalanceDetails) return 1 / 10 ** soBalanceDetails.baseAtoms;
+  }, [soBalanceDetails]);
+  const isDisabled = useMemo(() => {
+    const value = parseFloat(stakeValue);
+    if (
+      !soBalanceDetails ||
+      !value ||
+      !step ||
+      value > soBalanceDetails.numTokens ||
+      value < step
+    ) {
+      return true;
+    }
+    return false;
+  }, [stakeValue, soBalanceDetails, step]);
 
   if (!soBalanceDetails) return null;
 
@@ -114,8 +130,8 @@ function BalanceDetails() {
           <Card className="flex flex-col gap-2 bg-[#05040d]">
             <TokenInput
               type="number"
-              step={1 / 10 ** soBalanceDetails.baseAtoms}
-              min={0}
+              step={step}
+              min={step}
               max={soBalanceDetails.numTokens}
               placeholder="0.0"
               token={soBalanceDetails.optionMetadata}
@@ -131,7 +147,13 @@ function BalanceDetails() {
               }}
             />
 
-            <Button onClick={handleExerciseClick}>Exercise</Button>
+            <Button
+              className={isDisabled ? "bg-gray-400" : undefined}
+              disabled={isDisabled}
+              onClick={handleExerciseClick}
+            >
+              Exercise
+            </Button>
           </Card>
         </>
       )}

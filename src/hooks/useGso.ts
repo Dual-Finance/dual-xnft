@@ -49,7 +49,9 @@ export async function fetchGso(connection: Connection) {
     } = parseGsoState(acct.account.data);
     const lockupRatio = lockupRatioTokensPerMillion / 1000000;
     const stakeTimeRemainingMs = subscriptionPeriodEnd * 1000 - Date.now();
-    const isTesting = soName.toLowerCase().includes("trial");
+    const isTesting =
+      soName.toLowerCase().includes("trial") ||
+      soName.toLowerCase().includes("test");
 
     if (
       stakeTimeRemainingMs <= 0 ||
