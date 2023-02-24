@@ -1,3 +1,4 @@
+import { BN } from "@project-serum/anchor";
 import { PublicKey } from "@solana/web3.js";
 
 export interface SOState {
@@ -26,6 +27,7 @@ export interface GsoParams {
   soStatePk: PublicKey;
   base: PublicKey;
   baseAtoms: number;
+  option: PublicKey;
   soName: string;
   strike: number;
   lockupRatio: number;
@@ -62,6 +64,7 @@ export interface SoBalanceParams {
   quoteAtoms: number;
   soName: string;
   strike: number;
+  strikeAtomsPerLot: BN;
   lotSize: number;
   numTokens: number;
   metadata?: any;

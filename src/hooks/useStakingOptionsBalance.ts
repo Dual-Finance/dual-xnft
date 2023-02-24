@@ -2,7 +2,13 @@ import { useEffect, useState } from "react";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { useConnection } from "@solana/wallet-adapter-react";
 import { getAssociatedTokenAddress } from "@solana/spl-token";
-import { Address, AnchorProvider, Idl, Program } from "@project-serum/anchor";
+import {
+  Address,
+  AnchorProvider,
+  BN,
+  Idl,
+  Program,
+} from "@project-serum/anchor";
 import {
   StakingOptions,
   STAKING_OPTIONS_PK,
@@ -46,7 +52,9 @@ export async function fetchStakingOptionsBalance(
 
   try {
     // Fetch all program accounts for SO.
-    const data = await fetchProgramAccounts(connection, STAKING_OPTIONS_PK);
+    const data = await fetchProgramAccounts(connection, STAKING_OPTIONS_PK, {
+      filters: [{ dataSize: STAKING_OPTIONS_STATE_SIZE }],
+    });
     const allStakingOptionParams = [];
 
     const stateAddresses: Address[] = [];
@@ -70,16 +78,18 @@ export async function fetchStakingOptionsBalance(
 
     const stakingOptionsHelper = new StakingOptions(connection.rpcEndpoint);
     const tokenAccountAddresses: string[] = [];
+    const soMints = [];
     // For each, check the option mint and look into the ATA
     // eslint-disable-next-line no-restricted-syntax
-    for (const state of states) {
-      const { strikes, soName, baseMint } = state as SOState;
+    for (let i = 0; i < states.length; ++i) {
+      const { strikes, soName, baseMint } = states[i] as SOState;
       // TODO: Do this for multiple strikes. Will be easier once switched to balance API.
       const soMint = await stakingOptionsHelper.soMint(
         strikes[0],
         soName,
         baseMint
       );
+      soMints.push(soMint);
       const ataAddress = await getAssociatedTokenAddress(soMint, publicKey);
       tokenAccountAddresses.push(ataAddress.toBase58());
     }
@@ -106,31 +116,30 @@ export async function fetchStakingOptionsBalance(
         baseDecimals,
         quoteDecimals,
       } = states[i] as unknown as SOState;
-      const tokenJson = await fetchTokenMetadata(connection, baseMint);
+      const numTokens = tokenAccountAmount(tokenAccounts[i]);
 
-      if (optionExpiration < Math.floor(Date.now() / 1_000)) {
+      if (
+        optionExpiration < Math.floor(Date.now() / 1_000) ||
+        numTokens === 0
+      ) {
         continue;
       }
 
-      if (tokenAccountAmount(tokenAccounts[i]) === 0) {
-        continue;
-      }
-
-      const soMint = await stakingOptionsHelper.soMint(
-        strikes[0],
-        soName,
-        baseMint
-      );
+      const soMint = soMints[i];
+      const [tokenJson, optionJson] = await Promise.all([
+        fetchTokenMetadata(connection, baseMint),
+        fetchTokenMetadata(connection, soMint),
+      ]);
       const strikeInUSD =
         (strikes[0] / (10 ** quoteDecimals * lotSize)) * 10 ** baseDecimals;
-      const optionJson = await fetchTokenMetadata(connection, soMint);
       const soParams: SoBalanceParams = {
         soName,
         lotSize,
-        numTokens: tokenAccountAmount(tokenAccounts[i]),
+        numTokens,
         expiration: new Date(optionExpiration * 1_000).toLocaleDateString(),
         expirationInt: optionExpiration,
         strike: strikeInUSD,
+        strikeAtomsPerLot: new BN(strikes[0]),
         soStatePk: new PublicKey(stateAddresses[i]),
         base: baseMint,
         quote: quoteMint,

@@ -8,6 +8,7 @@ import {
   Transaction,
   TransactionInstruction,
   SYSVAR_RENT_PUBKEY,
+  GetProgramAccountsConfig,
 } from "@solana/web3.js";
 import { Metadata, PROGRAM_ID } from "@metaplex-foundation/mpl-token-metadata";
 import {
@@ -23,7 +24,7 @@ import { queryClient } from "../client";
 import { BONK_MINT_MAINNET } from "../config";
 
 export async function stakeGso(
-  { soName, base, gsoStatePk }: GsoParams,
+  { soName, base, option, gsoStatePk }: GsoParams,
   amount: number,
   connection: Connection,
   wallet: WalletContextState
@@ -31,36 +32,24 @@ export async function stakeGso(
   if (!wallet.publicKey) {
     return;
   }
-  const gso = new GSO(connection.rpcEndpoint);
-  const so = new StakingOptions(connection.rpcEndpoint);
-  const userBaseAccount = await getAssociatedTokenAddress(
-    base,
-    wallet.publicKey
-  );
-  const transaction = new web3.Transaction();
 
-  // TODO: Move the init token accounts into the SDK
-  const soState = await so.getState("GSO" + soName, base);
-  const optionMint = await so.soMint(
-    // @ts-ignore
-    soState.strikes[0],
-    "GSO" + soName,
-    base
-  );
-  const userOptionAccount = await getAssociatedTokenAddress(
-    optionMint,
-    wallet.publicKey
-  );
+  const [userBaseAccount, userOptionAccount] = await Promise.all([
+    getAssociatedTokenAddress(base, wallet.publicKey),
+    getAssociatedTokenAddress(option, wallet.publicKey),
+  ]);
+
+  const transaction = new web3.Transaction();
   if (!(await connection.getAccountInfo(userOptionAccount))) {
     transaction.add(
       createAssociatedTokenAccountInstr(
         userOptionAccount,
-        optionMint,
+        option,
         wallet.publicKey,
         wallet.publicKey
       )
     );
   }
+  const gso = new GSO(connection.rpcEndpoint);
   const xBaseMint = await gso.xBaseMint(gsoStatePk);
   const userXBaseMintAccount = await getAssociatedTokenAddress(
     xBaseMint,
@@ -99,14 +88,13 @@ export async function unstakeGSO(
   if (!wallet.publicKey) {
     return;
   }
-  const gso = new GSO(connection.rpcEndpoint);
-  let transaction = new web3.Transaction();
 
   const userBaseAccount = await getAssociatedTokenAddress(
     base,
     wallet.publicKey
   );
-  // Required since SDK uses getAccount() & user may have burned account
+
+  const transaction = new web3.Transaction();
   await checkBurnedAccount(
     transaction,
     connection,
@@ -114,6 +102,7 @@ export async function unstakeGSO(
     base,
     wallet.publicKey
   );
+  const gso = new GSO(connection.rpcEndpoint);
   const unstakeInstruction = await gso.createUnstakeInstruction(
     amount,
     soName,
@@ -136,7 +125,7 @@ export async function unstakeGSO(
 }
 
 export async function exerciseSO(
-  { soName, base, quote }: SoBalanceParams,
+  { soName, base, quote, option, strikeAtomsPerLot }: SoBalanceParams,
   amount: number,
   connection: Connection,
   wallet: WalletContextState,
@@ -146,53 +135,38 @@ export async function exerciseSO(
     return;
   }
 
-  const so = new StakingOptions(connection.rpcEndpoint);
-  const soStateObj = await so.getState(soName, base);
+  const [userSoAccount, userQuoteAccount, userBaseAccount] = await Promise.all([
+    getAssociatedTokenAddress(option, wallet.publicKey),
+    getAssociatedTokenAddress(quote, wallet.publicKey),
+    getAssociatedTokenAddress(base, wallet.publicKey),
+  ]);
 
-  // @ts-ignore
-  const strikeState = soStateObj.strikes[0];
-  const strikeAtomsPerLot = new BN(strikeState);
-  const authority = wallet.publicKey;
-
-  // @ts-ignore
-  const optionMint = await so.soMint(strikeAtomsPerLot, soName, base);
-  const userSoAccount = await getAssociatedTokenAddress(
-    optionMint,
-    wallet.publicKey
-  );
-  const userQuoteAccount = await getAssociatedTokenAddress(
-    quote,
-    wallet.publicKey
-  );
-  const userBaseAccount = await getAssociatedTokenAddress(
-    base,
-    wallet.publicKey
-  );
-  // Required since SDK uses getAccount() & user may have burned account
-  const transactionExercise = new web3.Transaction();
+  const transaction = new web3.Transaction();
   await checkBurnedAccount(
-    transactionExercise,
+    transaction,
     connection,
     userBaseAccount,
     base,
     wallet.publicKey
   );
+  const so = new StakingOptions(connection.rpcEndpoint);
   const exerciseInstruction = await so.createExerciseInstruction(
     new BN(amount),
     strikeAtomsPerLot,
     soName,
-    authority,
+    wallet.publicKey,
     userSoAccount,
     userQuoteAccount,
     userBaseAccount
   );
-  transactionExercise.add(exerciseInstruction);
+  transaction.add(exerciseInstruction);
   // @ts-ignore
-  const signature = await wallet.sendAndConfirm(transactionExercise);
+  const signature = await wallet.sendAndConfirm(transaction);
 
   return signature;
 }
 
+// Required for unstake/exercise since SDK uses getAccount() & user may have burned account
 async function checkBurnedAccount(
   tx: Transaction,
   connection: Connection,
@@ -312,11 +286,12 @@ export async function fetchMint(connection: Connection, mint: PublicKey) {
 
 export async function fetchProgramAccounts(
   connection: Connection,
-  pk: PublicKey
+  pk: PublicKey,
+  config?: GetProgramAccountsConfig
 ) {
   const data = queryClient.fetchQuery({
-    queryKey: ["getProgramAccounts", pk.toBase58()],
-    queryFn: () => connection.getProgramAccounts(pk),
+    queryKey: ["getProgramAccounts", pk.toBase58(), config],
+    queryFn: () => connection.getProgramAccounts(pk, config),
   });
   return data;
 }

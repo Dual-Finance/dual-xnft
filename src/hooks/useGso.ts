@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { utils } from "@project-serum/anchor";
 import { Connection } from "@solana/web3.js";
 import { useConnection } from "@solana/wallet-adapter-react";
 import { StakingOptions } from "@dual-finance/staking-options";
@@ -33,7 +34,9 @@ export default function useGso() {
 
 export async function fetchGso(connection: Connection) {
   const stakingOptions = new StakingOptions(connection.rpcEndpoint);
-  const data = await fetchProgramAccounts(connection, GSO_PK);
+  const data = await fetchProgramAccounts(connection, GSO_PK, {
+    filters: [{ dataSize: GSO_STATE_SIZE }],
+  });
   const allGsoParams = [];
   for (const acct of data) {
     if (acct.account.data.length !== GSO_STATE_SIZE) {
@@ -63,23 +66,25 @@ export async function fetchGso(connection: Connection) {
     }
 
     // TODO: Unroll these and cache the fetches to improve page load.
-    const soState: SOState = (await stakingOptions.getState(
-      `GSO${soName}`,
-      baseMint
-    )) as unknown as SOState;
-    const { lotSize, quoteMint, optionExpiration } = soState;
-    const tokenJson = await fetchTokenMetadata(connection, baseMint);
+    const { lotSize, quoteMint, optionExpiration, strikes } =
+      (await stakingOptions.getState(
+        `GSO${soName}`,
+        baseMint
+      )) as unknown as SOState;
 
-    // TODO: Cache mint decimals to avoid load on RPC provider.
-    const baseDecimals = (await fetchMint(connection, baseMint)).decimals;
-    const quoteDecimals = (await fetchMint(connection, quoteMint)).decimals;
+    const [tokenJson, baseToken, quoteToken, optionMint] = await Promise.all([
+      fetchTokenMetadata(connection, baseMint),
+      fetchMint(connection, baseMint),
+      fetchMint(connection, quoteMint),
+      stakingOptions.soMint(strikes[0], "GSO" + soName, baseMint),
+    ]);
 
     const timeLeft = msToTimeLeft(stakeTimeRemainingMs);
 
-    // Reversing this computation.
     // const strikeAtomsPerLot = strike * lotSize * 10 ** (quoteDecimals - baseDecimals);
     const strikeInUSD =
-      (strike / (10 ** quoteDecimals * lotSize)) * 10 ** baseDecimals;
+      (strike / (10 ** quoteToken.decimals * lotSize)) *
+      10 ** baseToken.decimals;
 
     const gsoParams: GsoParams = {
       soName,
@@ -90,7 +95,8 @@ export async function fetchGso(connection: Connection) {
       subscription: timeLeft,
       subscriptionInt: subscriptionPeriodEnd,
       base: baseMint,
-      baseAtoms: baseDecimals,
+      baseAtoms: baseToken.decimals,
+      option: optionMint,
       strike: strikeInUSD,
       gsoStatePk: acct.pubkey,
       soStatePk: stakingOptionsState,
@@ -104,7 +110,17 @@ export async function fetchGso(connection: Connection) {
 export async function fetchGsoDetails(connection: Connection, name?: string) {
   if (!name) return;
   const stakingOptions = new StakingOptions(connection.rpcEndpoint);
-  const data = await fetchProgramAccounts(connection, GSO_PK);
+  const data = await fetchProgramAccounts(connection, GSO_PK, {
+    filters: [
+      { dataSize: GSO_STATE_SIZE },
+      {
+        memcmp: {
+          offset: 48,
+          bytes: utils.bytes.bs58.encode(Buffer.from(name)),
+        },
+      },
+    ],
+  });
   for (const acct of data) {
     if (acct.account.data.length !== GSO_STATE_SIZE) {
       continue;
@@ -124,23 +140,25 @@ export async function fetchGsoDetails(connection: Connection, name?: string) {
     const stakeTimeRemainingMs = subscriptionPeriodEnd * 1000 - Date.now();
 
     // TODO: Unroll these and cache the fetches to improve page load.
-    const soState: SOState = (await stakingOptions.getState(
-      `GSO${soName}`,
-      baseMint
-    )) as unknown as SOState;
-    const { lotSize, quoteMint, optionExpiration } = soState;
-    const tokenJson = await fetchTokenMetadata(connection, baseMint);
+    const { lotSize, quoteMint, optionExpiration, strikes } =
+      (await stakingOptions.getState(
+        `GSO${soName}`,
+        baseMint
+      )) as unknown as SOState;
 
-    // TODO: Cache mint decimals to avoid load on RPC provider.
-    const baseDecimals = (await fetchMint(connection, baseMint)).decimals;
-    const quoteDecimals = (await fetchMint(connection, quoteMint)).decimals;
+    const [tokenJson, baseToken, quoteToken, optionMint] = await Promise.all([
+      fetchTokenMetadata(connection, baseMint),
+      fetchMint(connection, baseMint),
+      fetchMint(connection, quoteMint),
+      stakingOptions.soMint(strikes[0], "GSO" + soName, baseMint),
+    ]);
 
     const timeLeft = msToTimeLeft(stakeTimeRemainingMs);
 
-    // Reversing this computation.
     // const strikeAtomsPerLot = strike * lotSize * 10 ** (quoteDecimals - baseDecimals);
     const strikeInUSD =
-      (strike / (10 ** quoteDecimals * lotSize)) * 10 ** baseDecimals;
+      (strike / (10 ** quoteToken.decimals * lotSize)) *
+      10 ** baseToken.decimals;
 
     const gsoParams: GsoParams = {
       soName,
@@ -151,7 +169,8 @@ export async function fetchGsoDetails(connection: Connection, name?: string) {
       subscription: timeLeft,
       subscriptionInt: subscriptionPeriodEnd,
       base: baseMint,
-      baseAtoms: baseDecimals,
+      baseAtoms: baseToken.decimals,
+      option: optionMint,
       strike: strikeInUSD,
       gsoStatePk: acct.pubkey,
       soStatePk: stakingOptionsState,
