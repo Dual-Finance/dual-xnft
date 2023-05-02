@@ -125,7 +125,7 @@ function Balances() {
                       {g.numTokens} {symbol?.toUpperCase()}
                     </div>
                     <p className="text-sm">
-                      {isExpired ? "Expired on: " : "Expires: "}
+                      {isExpired ? "Unlocked: " : "Unlocks: "}
                       {g.expiration}
                     </p>
                   </div>
