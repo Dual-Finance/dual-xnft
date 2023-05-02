@@ -73,6 +73,6 @@ body {
 
 @layer components {
   .card {
-    @apply w-full p-4 rounded bg-black border-2 border-gray-500
+    @apply w-full p-4 rounded bg-black border-2 border-gray-500;
   }
 }

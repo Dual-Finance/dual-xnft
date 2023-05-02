@@ -6,10 +6,7 @@ export function Card({
   ...props
 }: PropsWithChildren<HTMLAttributes<HTMLDivElement>>) {
   return (
-    <div
-      {...props}
-      className={`card ${className}`}
-    >
+    <div {...props} className={`card ${className}`}>
       {children}
     </div>
   );
