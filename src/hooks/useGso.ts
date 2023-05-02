@@ -6,7 +6,7 @@ import { GSO } from "@dual-finance/gso";
 
 import { GsoParams } from "../types";
 import { fetchMint, fetchTokenMetadata } from "../core";
-import { msToTimeLeft } from "../utils";
+import { convertUnixTimestamp, msToTimeLeft } from "../utils";
 
 export default function useGso() {
   const { connection } = useConnection();
@@ -61,7 +61,7 @@ export async function fetchGso(connection: Connection) {
         soName: projectName,
         subscription: timeLeft,
         subscriptionInt: subscriptionPeriodEnd,
-        expiration: new Date(optionExpiration * 1000).toLocaleDateString(),
+        expiration: convertUnixTimestamp(optionExpiration),
         expirationInt: optionExpiration,
         strike: strikeInUSD,
         base: baseMint,

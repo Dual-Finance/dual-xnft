@@ -27,3 +27,13 @@ export function msToTimeLeft(duration: number) {
   const days = Math.floor(duration / (1000 * 60 * 60 * 24));
   return `${days}d ${hours}h ${minutes}m`;
 }
+
+export function convertUnixTimestamp(unixTimestamp: number): string {
+  const date = new Date(unixTimestamp * 1000);
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const monthName = monthNames[date.getMonth()];
+  const dayString = date.getDate().toString().padStart(2, "0");
+  const yearString = date.getFullYear();
+  return `${monthName} ${dayString} ${yearString}`;
+}
