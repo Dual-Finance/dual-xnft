@@ -104,39 +104,43 @@ function Balances() {
               );
             })}
         {gsoBalances &&
-          gsoBalances
-            .map((g) => {
-              const isExpired = g.expirationInt < Math.floor(Date.now() / 1000);
-              const { symbol, image } = g.metadata;
-              return (
-                <Link to={`/balance/gso/${g.soName}`} key={g.soName}>
-                  <Card className="p-2">
-                    <div
-                      role="listitem"
-                      className="flex gap-3 items-center text-white"
-                    >
-                      <div className="relative">
-                        <img
-                          src={image}
-                          alt={`${symbol} icon`}
-                          className="w-10 h-10 rounded-full"
-                        />
-                      </div>
-                      <div className="flex-1 text-left">
-                        <div className="text-lg">
-                          {g.numTokens} {symbol?.toUpperCase()}
-                        </div>
-                        <p className="text-sm">
-                          {isExpired ? "Expired on: " : "Expires: "}
-                          {g.expiration}
-                        </p>
-                      </div>
-                      <FaChevronRight />
+          gsoBalances.map((g) => {
+            const isExpired = g.expirationInt < Math.floor(Date.now() / 1000);
+            const { symbol, image } = g.metadata;
+            const content = (
+              <Card className={`p-2 ${!isExpired ? "opacity-75" : ""}`}>
+                <div
+                  role="listitem"
+                  className="flex gap-3 items-center text-white"
+                >
+                  <div className="relative">
+                    <img
+                      src={image}
+                      alt={`${symbol} icon`}
+                      className="w-10 h-10 rounded-full"
+                    />
+                  </div>
+                  <div className="flex-1 text-left">
+                    <div className="text-lg">
+                      {g.numTokens} {symbol?.toUpperCase()}
                     </div>
-                  </Card>
-                </Link>
-              );
-            })}
+                    <p className="text-sm">
+                      {isExpired ? "Expired on: " : "Expires: "}
+                      {g.expiration}
+                    </p>
+                  </div>
+                  {isExpired && <FaChevronRight />}
+                </div>
+              </Card>
+            );
+            return isExpired ? (
+              <Link to={`/balance/gso/${g.soName}`} key={g.soName}>
+                {content}
+              </Link>
+            ) : (
+              content
+            );
+          })}
       </div>
     </Transition>
   );
