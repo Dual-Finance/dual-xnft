@@ -70,3 +70,9 @@ body {
     background-color: #f9f9f9;
   }
 }
+
+@layer components {
+  .card {
+    @apply w-full p-4 rounded bg-black border-2 border-gray-500
+  }
+}

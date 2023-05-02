@@ -61,7 +61,7 @@ function Balances() {
       enterFrom="opacity-0 translate-y-1"
       enterTo="opacity-100 translate-y-0"
     >
-      <div role="list">
+      <div role="list" className="flex flex-col gap-2">
         {soBalances &&
           soBalances
             .filter((g) => g.expirationInt >= Math.floor(Date.now() / 1000))
@@ -71,10 +71,10 @@ function Balances() {
                 g.optionMetadata;
               return (
                 <Link to={`/balance/so/${g.soName}`} key={g.soName}>
-                  <Card className="mb-2">
+                  <Card className="p-2">
                     <div
                       role="listitem"
-                      className="flex gap-4 items-center text-white"
+                      className="flex gap-3 items-center text-white"
                     >
                       <div className="relative">
                         <img
@@ -105,15 +105,15 @@ function Balances() {
             })}
         {gsoBalances &&
           gsoBalances
-            .filter((g) => g.expirationInt < Math.floor(Date.now() / 1000))
             .map((g) => {
+              const isExpired = g.expirationInt < Math.floor(Date.now() / 1000);
               const { symbol, image } = g.metadata;
               return (
                 <Link to={`/balance/gso/${g.soName}`} key={g.soName}>
-                  <Card className="mb-2">
+                  <Card className="p-2">
                     <div
                       role="listitem"
-                      className="flex gap-4 items-center text-white"
+                      className="flex gap-3 items-center text-white"
                     >
                       <div className="relative">
                         <img
@@ -126,7 +126,10 @@ function Balances() {
                         <div className="text-lg">
                           {g.numTokens} {symbol?.toUpperCase()}
                         </div>
-                        <p className="text-sm">Expired on: {g.expiration}</p>
+                        <p className="text-sm">
+                          {isExpired ? "Expired on: " : "Expires: "}
+                          {g.expiration}
+                        </p>
                       </div>
                       <FaChevronRight />
                     </div>

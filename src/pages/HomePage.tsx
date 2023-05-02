@@ -49,13 +49,13 @@ function GsoList() {
       enterFrom="opacity-0 translate-y-1"
       enterTo="opacity-100 translate-y-0"
     >
-      <div role="list">
+      <div role="list" className="flex flex-col gap-2">
         {gso &&
           gso.map((g) => {
             const { symbol, image } = g.metadata;
             return (
               <Link to={`/gso/${g.soName}`} key={g.soName}>
-                <Card className="mb-2">
+                <Card>
                   <div
                     role="listitem"
                     className="flex gap-2 items-center text-white"
