@@ -1,18 +1,11 @@
 import { useEffect, useState } from "react";
-import { utils } from "@project-serum/anchor";
 import { Connection } from "@solana/web3.js";
 import { useConnection } from "@solana/wallet-adapter-react";
 import { StakingOptions } from "@dual-finance/staking-options";
-import { GSO_PK } from "@dual-finance/gso";
+import { GSO } from "@dual-finance/gso";
 
-import { GSO_STATE_SIZE } from "../config";
-import { GsoParams, SOState } from "../types";
-import {
-  fetchMint,
-  fetchProgramAccounts,
-  fetchTokenMetadata,
-  parseGsoState,
-} from "../core";
+import { GsoParams } from "../types";
+import { fetchMint, fetchTokenMetadata } from "../core";
 import { msToTimeLeft } from "../utils";
 
 export default function useGso() {
@@ -33,149 +26,59 @@ export default function useGso() {
 }
 
 export async function fetchGso(connection: Connection) {
+  const gsoClient = new GSO(connection.rpcEndpoint);
   const stakingOptions = new StakingOptions(connection.rpcEndpoint);
-  const data = await fetchProgramAccounts(connection, GSO_PK, {
-    filters: [{ dataSize: GSO_STATE_SIZE }],
-  });
-  const allGsoParams = [];
-  for (const acct of data) {
-    if (acct.account.data.length !== GSO_STATE_SIZE) {
-      continue;
-    }
-    const {
-      soName,
-      stakingOptionsState,
-      subscriptionPeriodEnd,
-      strike,
-      lockupRatioTokensPerMillion,
-      baseMint,
-    } = parseGsoState(acct.account.data);
-    const lockupRatio = lockupRatioTokensPerMillion / 1000000;
-    const stakeTimeRemainingMs = subscriptionPeriodEnd * 1000 - Date.now();
-    const isTesting =
-      soName.toLowerCase().includes("trial") ||
-      soName.toLowerCase().includes("test");
+  const gsos = await gsoClient.getGsos();
+  const params: GsoParams[] = await Promise.all(
+    gsos.map(async (gsoParam) => {
+      const {
+        projectName,
+        lockupRatioTokensPerMillion,
+        subscriptionPeriodEnd,
+        optionExpiration,
+        baseMint,
+        quoteMint,
+        strike,
+        lotSize,
+      } = gsoParam;
+      const lockupRatio = lockupRatioTokensPerMillion / 1000000;
+      const stakeTimeRemainingMs = subscriptionPeriodEnd * 1000 - Date.now();
+      const timeLeft = msToTimeLeft(stakeTimeRemainingMs);
 
-    if (
-      stakeTimeRemainingMs <= 0 ||
-      lockupRatio <= 0 ||
-      strike <= 0 ||
-      isTesting
-    ) {
-      continue;
-    }
+      const [tokenJson, baseToken, quoteToken, optionMint] = await Promise.all([
+        fetchTokenMetadata(connection, baseMint),
+        fetchMint(connection, baseMint),
+        fetchMint(connection, quoteMint),
+        stakingOptions.soMint(strike, "GSO" + projectName, baseMint),
+      ]);
 
-    // TODO: Unroll these and cache the fetches to improve page load.
-    const { lotSize, quoteMint, optionExpiration, strikes } =
-      (await stakingOptions.getState(
-        `GSO${soName}`,
-        baseMint
-      )) as unknown as SOState;
-
-    const [tokenJson, baseToken, quoteToken, optionMint] = await Promise.all([
-      fetchTokenMetadata(connection, baseMint),
-      fetchMint(connection, baseMint),
-      fetchMint(connection, quoteMint),
-      stakingOptions.soMint(strikes[0], "GSO" + soName, baseMint),
-    ]);
-
-    const timeLeft = msToTimeLeft(stakeTimeRemainingMs);
-
-    // const strikeAtomsPerLot = strike * lotSize * 10 ** (quoteDecimals - baseDecimals);
-    const strikeInUSD =
-      (strike / (10 ** quoteToken.decimals * lotSize)) *
-      10 ** baseToken.decimals;
-
-    const gsoParams: GsoParams = {
-      soName,
-      lockupRatio,
-      lotSize,
-      expiration: new Date(optionExpiration * 1000).toLocaleDateString(),
-      expirationInt: optionExpiration,
-      subscription: timeLeft,
-      subscriptionInt: subscriptionPeriodEnd,
-      base: baseMint,
-      baseAtoms: baseToken.decimals,
-      option: optionMint,
-      strike: strikeInUSD,
-      gsoStatePk: acct.pubkey,
-      soStatePk: stakingOptionsState,
-      metadata: tokenJson,
-    };
-    allGsoParams.push(gsoParams);
-  }
-  return allGsoParams;
+      const strikeInUSD =
+        (strike / (10 ** quoteToken.decimals * lotSize)) *
+        10 ** baseToken.decimals;
+      return {
+        lockupRatio,
+        lotSize: gsoParam.lotSize,
+        soName: projectName,
+        subscription: timeLeft,
+        subscriptionInt: subscriptionPeriodEnd,
+        expiration: new Date(optionExpiration * 1000).toLocaleDateString(),
+        expirationInt: optionExpiration,
+        strike: strikeInUSD,
+        base: baseMint,
+        baseAtoms: baseToken.decimals,
+        option: optionMint,
+        gsoStatePk: gsoParam.gsoStatePk,
+        soStatePk: gsoParam.stakingOptionsState,
+        metadata: tokenJson,
+      };
+    })
+  );
+  return params;
 }
 
 export async function fetchGsoDetails(connection: Connection, name?: string) {
   if (!name) return;
-  const stakingOptions = new StakingOptions(connection.rpcEndpoint);
-  const data = await fetchProgramAccounts(connection, GSO_PK, {
-    filters: [
-      { dataSize: GSO_STATE_SIZE },
-      {
-        memcmp: {
-          offset: 48,
-          bytes: utils.bytes.bs58.encode(Buffer.from(name)),
-        },
-      },
-    ],
-  });
-  for (const acct of data) {
-    if (acct.account.data.length !== GSO_STATE_SIZE) {
-      continue;
-    }
-    const {
-      soName,
-      stakingOptionsState,
-      subscriptionPeriodEnd,
-      strike,
-      lockupRatioTokensPerMillion,
-      baseMint,
-    } = parseGsoState(acct.account.data);
-    if (soName !== name) {
-      continue;
-    }
-    const lockupRatio = lockupRatioTokensPerMillion / 1000000;
-    const stakeTimeRemainingMs = subscriptionPeriodEnd * 1000 - Date.now();
-
-    // TODO: Unroll these and cache the fetches to improve page load.
-    const { lotSize, quoteMint, optionExpiration, strikes } =
-      (await stakingOptions.getState(
-        `GSO${soName}`,
-        baseMint
-      )) as unknown as SOState;
-
-    const [tokenJson, baseToken, quoteToken, optionMint] = await Promise.all([
-      fetchTokenMetadata(connection, baseMint),
-      fetchMint(connection, baseMint),
-      fetchMint(connection, quoteMint),
-      stakingOptions.soMint(strikes[0], "GSO" + soName, baseMint),
-    ]);
-
-    const timeLeft = msToTimeLeft(stakeTimeRemainingMs);
-
-    // const strikeAtomsPerLot = strike * lotSize * 10 ** (quoteDecimals - baseDecimals);
-    const strikeInUSD =
-      (strike / (10 ** quoteToken.decimals * lotSize)) *
-      10 ** baseToken.decimals;
-
-    const gsoParams: GsoParams = {
-      soName,
-      lockupRatio,
-      lotSize,
-      expiration: new Date(optionExpiration * 1000).toLocaleDateString(),
-      expirationInt: optionExpiration,
-      subscription: timeLeft,
-      subscriptionInt: subscriptionPeriodEnd,
-      base: baseMint,
-      baseAtoms: baseToken.decimals,
-      option: optionMint,
-      strike: strikeInUSD,
-      gsoStatePk: acct.pubkey,
-      soStatePk: stakingOptionsState,
-      metadata: tokenJson,
-    };
-    return gsoParams;
-  }
+  const gsos = await fetchGso(connection);
+  const gso = gsos.find((gso) => gso.soName === name);
+  return gso;
 }
