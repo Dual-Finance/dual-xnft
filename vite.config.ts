@@ -21,6 +21,5 @@ export default defineConfig(({ command, mode }) => {
     server: {
       port: 9933,
     },
-    base: env.NODE_ENV === "production" ? "/dist" : "",
   };
 });
