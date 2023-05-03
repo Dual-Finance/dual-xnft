@@ -3,7 +3,7 @@ globalThis.Buffer = buffer.Buffer;
 
 import { ConnectionProvider } from "@solana/wallet-adapter-react";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { RouterProvider, createBrowserRouter } from "react-router-dom";
+import { RouterProvider, createHashRouter } from "react-router-dom";
 import "tw-elements";
 import { version } from "../package.json";
 import { Layout } from "./components/Layout";
@@ -28,7 +28,7 @@ declare global {
   }
 }
 
-const router = createBrowserRouter([
+const router = createHashRouter([
   {
     path: "/",
     element: <Layout />,
