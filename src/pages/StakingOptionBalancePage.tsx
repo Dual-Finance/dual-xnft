@@ -113,7 +113,7 @@ function BalanceDetails() {
 
   const { symbol, image } = soBalanceDetails.metadata;
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2 text-white">
       {soBalanceDetails && (
         <>
           <Card>

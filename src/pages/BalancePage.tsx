@@ -61,7 +61,7 @@ function Balances() {
       enterFrom="opacity-0 translate-y-1"
       enterTo="opacity-100 translate-y-0"
     >
-      <div role="list">
+      <div role="list" className="flex flex-col gap-2">
         {soBalances &&
           soBalances
             .filter((g) => g.expirationInt >= Math.floor(Date.now() / 1000))
@@ -71,10 +71,10 @@ function Balances() {
                 g.optionMetadata;
               return (
                 <Link to={`/balance/so/${g.soName}`} key={g.soName}>
-                  <Card className="mb-2">
+                  <Card className="p-2">
                     <div
                       role="listitem"
-                      className="flex gap-4 items-center text-white"
+                      className="flex gap-3 items-center text-white"
                     >
                       <div className="relative">
                         <img
@@ -104,36 +104,43 @@ function Balances() {
               );
             })}
         {gsoBalances &&
-          gsoBalances
-            .filter((g) => g.expirationInt < Math.floor(Date.now() / 1000))
-            .map((g) => {
-              const { symbol, image } = g.metadata;
-              return (
-                <Link to={`/balance/gso/${g.soName}`} key={g.soName}>
-                  <Card className="mb-2">
-                    <div
-                      role="listitem"
-                      className="flex gap-4 items-center text-white"
-                    >
-                      <div className="relative">
-                        <img
-                          src={image}
-                          alt={`${symbol} icon`}
-                          className="w-10 h-10 rounded-full"
-                        />
-                      </div>
-                      <div className="flex-1 text-left">
-                        <div className="text-lg">
-                          {g.numTokens} {symbol?.toUpperCase()}
-                        </div>
-                        <p className="text-sm">Expired on: {g.expiration}</p>
-                      </div>
-                      <FaChevronRight />
+          gsoBalances.map((g) => {
+            const isExpired = g.expirationInt < Math.floor(Date.now() / 1000);
+            const { symbol, image } = g.metadata;
+            const content = (
+              <Card className={`p-2 ${!isExpired ? "opacity-75" : ""}`}>
+                <div
+                  role="listitem"
+                  className="flex gap-3 items-center text-white"
+                >
+                  <div className="relative">
+                    <img
+                      src={image}
+                      alt={`${symbol} icon`}
+                      className="w-10 h-10 rounded-full"
+                    />
+                  </div>
+                  <div className="flex-1 text-left">
+                    <div className="text-lg">
+                      {g.numTokens} {symbol?.toUpperCase()}
                     </div>
-                  </Card>
-                </Link>
-              );
-            })}
+                    <p className="text-sm">
+                      {isExpired ? "Unlocked: " : "Unlocks: "}
+                      {g.expiration}
+                    </p>
+                  </div>
+                  {isExpired && <FaChevronRight />}
+                </div>
+              </Card>
+            );
+            return isExpired ? (
+              <Link to={`/balance/gso/${g.soName}`} key={g.soName}>
+                {content}
+              </Link>
+            ) : (
+              content
+            );
+          })}
       </div>
     </Transition>
   );

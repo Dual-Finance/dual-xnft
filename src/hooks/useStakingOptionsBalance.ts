@@ -22,6 +22,7 @@ import {
   fetchTokenMetadata,
   fetchProgramAccounts,
 } from "../core";
+import { convertUnixTimestamp } from "../utils";
 
 export default function useStakingOptionsBalance() {
   const { connection } = useConnection();
@@ -136,7 +137,7 @@ export async function fetchStakingOptionsBalance(
         soName,
         lotSize,
         numTokens,
-        expiration: new Date(optionExpiration * 1_000).toLocaleDateString(),
+        expiration: convertUnixTimestamp(optionExpiration),
         expirationInt: optionExpiration,
         strike: strikeInUSD,
         strikeAtomsPerLot: new BN(strikes[0]),

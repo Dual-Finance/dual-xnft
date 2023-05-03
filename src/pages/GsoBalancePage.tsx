@@ -117,7 +117,7 @@ function BalanceDetails() {
 
   const { symbol, image } = gsoBalanceDetails.metadata;
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2 text-white">
       {gsoBalanceDetails && (
         <>
           <Card>
@@ -131,7 +131,7 @@ function BalanceDetails() {
                   Collateral: {gsoBalanceDetails.numTokens}{" "}
                   {symbol?.toUpperCase()}
                 </p>
-                <p>Expires: {gsoBalanceDetails.expiration}</p>
+                <p>Unlocked: {gsoBalanceDetails.expiration}</p>
               </div>
             </div>
           </Card>

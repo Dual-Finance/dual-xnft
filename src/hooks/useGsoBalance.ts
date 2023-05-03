@@ -13,6 +13,7 @@ import {
   fetchProgramAccounts,
 } from "../core";
 import { GsoBalanceParams, SOState } from "../types";
+import { convertUnixTimestamp } from "../utils";
 
 export default function useGsoBalance() {
   const { connection } = useConnection();
@@ -104,7 +105,7 @@ export async function fetchGsoBalance(
           lotSize,
           baseAtoms,
           quoteAtoms,
-          expiration: new Date(lockupPeriodEnd * 1_000).toLocaleDateString(),
+          expiration: convertUnixTimestamp(lockupPeriodEnd),
           expirationInt: lockupPeriodEnd,
           strike: strikeInUSD,
           // Allow for SO State to be closed
@@ -134,7 +135,7 @@ export async function fetchGsoBalance(
         numTokens,
         lotSize,
         baseAtoms,
-        expiration: new Date(lockupPeriodEnd * 1_000).toLocaleDateString(),
+        expiration: convertUnixTimestamp(lockupPeriodEnd),
         expirationInt: lockupPeriodEnd,
         strike: strikeInUSD,
         gsoStatePk: acct.pubkey,

@@ -115,7 +115,7 @@ function GsoDetails() {
   if (!gsoDetails) return null;
   const { symbol, image } = gsoDetails.metadata;
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2 text-white">
       {gsoDetails && (
         <>
           <Card>
