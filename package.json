@@ -1,7 +1,8 @@
 {
   "name": "dual-xnft",
   "private": true,
-  "version": "0.1.0",
+  "homepage": ".",
+  "version": "0.1.2",
   "type": "module",
   "scripts": {
     "dev": "vite",
