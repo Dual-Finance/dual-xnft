@@ -21,5 +21,9 @@ export default defineConfig(({ command, mode }) => {
     server: {
       port: 9933,
     },
+    build: {
+      assetsDir: "",
+    },
+    base: "",
   };
 });
