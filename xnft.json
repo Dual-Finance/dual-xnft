@@ -1,16 +1,19 @@
 {
-  "name": "xNFT Quickstart",
-  "version": "0.0.1",
-  "description": "React Native Example",
-  "website": "https://dual.finance",
   "kind": "app",
-  "icon": {
-    "md": "./assets/icon.png"
-  },
-  "screenshots": ["./assets/screenShot.png"],
+  "storage": "aws",
+  "name": "Dual Finance",
+  "version": "0.1.0",
+  "description": "Incentive Liquidity Infrastructure for Web3 Communities",
+  "website": "https://dual.finance",
+  "tag": "defi",
+  "contact": "https://discord.gg/P3uH9AvEp5",
   "entrypoints": {
     "default": {
       "web": "./dist/index.html"
     }
-  }
+  },
+  "icon": {
+    "md": "./assets/dual_logo.png"
+  },
+  "screenshots": ["./assets/DF_Backpack.png"]
 }
