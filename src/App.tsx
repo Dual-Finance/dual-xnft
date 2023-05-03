@@ -5,6 +5,7 @@ import { ConnectionProvider } from "@solana/wallet-adapter-react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import "tw-elements";
+import { version } from "../package.json";
 import { Layout } from "./components/Layout";
 import { HomePage, loader as homeLoader } from "./pages/HomePage";
 import { GsoPage, loader as gsoLoader } from "./pages/GsoPage";
@@ -60,6 +61,7 @@ const router = createBrowserRouter([
 ]);
 
 function App() {
+  console.info("Version", version);
   return (
     <ConnectionProvider endpoint={import.meta.env.VITE_RPC_URL_MAINNET}>
       <QueryClientProvider client={queryClient}>
