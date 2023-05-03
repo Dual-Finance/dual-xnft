@@ -22,7 +22,9 @@ export function Header() {
               <FaChevronLeft />
             </button>
           )}
-          <h1 className="text-left text-xl capitalize inline text-white">{title}</h1>
+          <h1 className="text-left text-xl capitalize inline text-white">
+            {title}
+          </h1>
         </div>
       </div>
     </header>

@@ -30,8 +30,20 @@ export function msToTimeLeft(duration: number) {
 
 export function convertUnixTimestamp(unixTimestamp: number): string {
   const date = new Date(unixTimestamp * 1000);
-  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const monthNames = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
   const monthName = monthNames[date.getMonth()];
   const dayString = date.getDate().toString().padStart(2, "0");
   const yearString = date.getFullYear();
