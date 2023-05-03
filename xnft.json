@@ -1,7 +1,7 @@
 {
   "kind": "app",
   "name": "Dual Finance",
-  "version": "v1.1",
+  "version": "0.1.1",
   "description": "Incentive Liquidity Infrastructure for Web3 Communities",
   "website": "https://dual.finance",
   "tag": "defi",
