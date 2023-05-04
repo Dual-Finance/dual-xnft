@@ -117,7 +117,8 @@ export async function fetchStakingOptionsBalance(
         baseDecimals,
         quoteDecimals,
       } = states[i] as unknown as SOState;
-      const numTokens = tokenAccountAmount(tokenAccounts[i]);
+      const numTokens =
+        (tokenAccountAmount(tokenAccounts[i]) * lotSize) / 10 ** baseDecimals;
 
       if (
         optionExpiration < Math.floor(Date.now() / 1_000) ||

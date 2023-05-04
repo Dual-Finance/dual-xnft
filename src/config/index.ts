@@ -11,3 +11,11 @@ export const NUM_SPL_ATOMS_PER_TOKEN: Record<string, number> = {
   [USDC_MINT_MAINNET]: 10 ** 6,
   [BONK_MINT_MAINNET]: 10 ** 5,
 };
+
+export const SO_LIQ_LIST = [
+  "GSOBONK_LOYALTY_11",
+  "GSOBONK_LOYALTY_10",
+  "GSOBONK_LOYALTY_9",
+  "MNGO Buyback 8",
+];
+export const DUAL_API_MAINNET = "https://api.dual.finance";
