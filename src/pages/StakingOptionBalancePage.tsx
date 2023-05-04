@@ -89,6 +89,7 @@ function BalanceDetails() {
         wallet
       );
       console.log("signature:", signature);
+      await connection.confirmTransaction(signature);
       await queryClient.invalidateQueries(["balance/so", wallet.publicKey]);
       await queryClient.invalidateQueries([
         "balance/so",
@@ -120,25 +121,24 @@ function BalanceDetails() {
       );
       liquidateParams.amount = amount;
     }
-    console.log("PARAMS", liquidateParams);
-    let signature = "";
-    fetch(`${DUAL_API_MAINNET}/orders/liquidateso`, {
-      method: "post",
-      // eslint-disable-next-line @typescript-eslint/naming-convention
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(liquidateParams),
-    })
-      .then(async (data) => {
+    try {
+      fetch(`${DUAL_API_MAINNET}/orders/liquidateso`, {
+        method: "post",
+        // eslint-disable-next-line @typescript-eslint/naming-convention
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(liquidateParams),
+      }).then(async (data) => {
         const buffer = await data.json();
         const recoveredTransaction = Transaction.from(
           Buffer.from(buffer, "base64")
         );
         // @ts-ignore
         const signedTx = await wallet.signTransaction(recoveredTransaction);
-        signature = await connection.sendRawTransaction(signedTx.serialize(), {
-          skipPreflight: true,
-        });
+        const signature = await connection.sendRawTransaction(
+          signedTx.serialize()
+        );
         console.log("signature:", signature);
+        await connection.confirmTransaction(signature);
         await queryClient.invalidateQueries(["balance/so", wallet.publicKey]);
         await queryClient.invalidateQueries([
           "balance/so",
@@ -146,10 +146,10 @@ function BalanceDetails() {
           name,
         ]);
         navigate("/balance");
-      })
-      .catch((err) => {
-        console.error(err);
       });
+    } catch (err) {
+      console.log(err);
+    }
   }, [soBalanceDetails, stakeValue, connection, wallet, name]);
 
   const step = useMemo(() => {
