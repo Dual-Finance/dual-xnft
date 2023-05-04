@@ -8,6 +8,7 @@ import {
   useNavigate,
   useParams,
 } from "react-router-dom";
+import { StakingOptions } from "@dual-finance/staking-options";
 import { queryClient } from "../client";
 import { Button } from "../components/Button";
 import { Card } from "../components/Card";
@@ -18,6 +19,8 @@ import { useWallet } from "../hooks/useWallet";
 import { SoBalanceParams } from "../types";
 import { exerciseSO, getConnection } from "../core";
 import { parseNumber, prettyFormatPrice } from "../utils";
+import { DUAL_API_MAINNET, SO_LIQ_LIST } from "../config";
+import { Transaction } from "@solana/web3.js";
 
 type LoaderParams = {
   params: {
@@ -74,7 +77,7 @@ function BalanceDetails() {
       return;
     }
 
-    const amount = Number(parseFloat(stakeValue));
+    const amount = Math.round((Number(stakeValue) / soBalanceDetails.lotSize) * 10 ** soBalanceDetails.baseAtoms);
     try {
       const signature = await exerciseSO(
         soBalanceDetails,
@@ -92,8 +95,56 @@ function BalanceDetails() {
       navigate("/balance");
     } catch (err) {}
   }, [soBalanceDetails, stakeValue, connection, wallet, name]);
+
+  const handleLiquidateClick = useCallback(async () => {
+    if (!connection || !soBalanceDetails || !wallet) {
+      return;
+    }
+    const { base, soName, lotSize, baseAtoms } = soBalanceDetails;
+    const so = new StakingOptions(connection.rpcEndpoint);
+    const soStateObj = await so.getState(soName, base);
+    const liquidateParams: any = {
+      // @ts-ignore
+      strike: soStateObj.strikes[0].toNumber(),
+      soName,
+      // @ts-ignore
+      soBaseMint: soStateObj.baseMint.toBase58(),
+      userWallet: wallet.publicKey.toBase58(),
+    };
+    if (stakeValue) {
+      const amount = Math.round((Number(stakeValue) / lotSize) * 10 ** baseAtoms);
+      liquidateParams.amount = amount;
+    }
+    console.log('PARAMS', liquidateParams);
+    let signature = '';
+    fetch(`${DUAL_API_MAINNET}/orders/liquidateso`, {
+      method: 'post',
+      // eslint-disable-next-line @typescript-eslint/naming-convention
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(liquidateParams),
+    })
+      .then(async (data) => {
+        const buffer = await data.json();
+        const recoveredTransaction = Transaction.from(Buffer.from(buffer, 'base64'));
+        // @ts-ignore
+        const signedTx = await wallet.signTransaction(recoveredTransaction);
+        signature = await connection.sendRawTransaction(signedTx.serialize(), { skipPreflight: true });
+        console.log("signature:", signature);
+        await queryClient.invalidateQueries(["balance/so", wallet.publicKey]);
+        await queryClient.invalidateQueries([
+          "balance/so",
+          wallet.publicKey,
+          name,
+        ]);
+        navigate("/balance");
+      })
+      .catch((err) => {
+        console.error(err);
+      });
+  }, [soBalanceDetails, stakeValue, connection, wallet, name]);
+
   const step = useMemo(() => {
-    if (soBalanceDetails) return 1 / 10 ** soBalanceDetails.baseAtoms;
+    if (soBalanceDetails) return soBalanceDetails.lotSize / 10 ** soBalanceDetails.baseAtoms;
   }, [soBalanceDetails]);
   const isDisabled = useMemo(() => {
     const value = parseFloat(stakeValue);
@@ -154,6 +205,15 @@ function BalanceDetails() {
             >
               Exercise
             </Button>
+            {SO_LIQ_LIST.includes(soBalanceDetails.soName) && (
+              <Button
+                className={isDisabled ? "bg-gray-400" : "bg-red-400"}
+                disabled={isDisabled}
+                onClick={handleLiquidateClick}
+              >
+                Liquidate
+              </Button>
+            )}
           </Card>
         </>
       )}
