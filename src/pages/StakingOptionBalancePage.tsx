@@ -77,7 +77,10 @@ function BalanceDetails() {
       return;
     }
 
-    const amount = Math.round((Number(stakeValue) / soBalanceDetails.lotSize) * 10 ** soBalanceDetails.baseAtoms);
+    const amount = Math.round(
+      (Number(stakeValue) / soBalanceDetails.lotSize) *
+        10 ** soBalanceDetails.baseAtoms
+    );
     try {
       const signature = await exerciseSO(
         soBalanceDetails,
@@ -112,23 +115,29 @@ function BalanceDetails() {
       userWallet: wallet.publicKey.toBase58(),
     };
     if (stakeValue) {
-      const amount = Math.round((Number(stakeValue) / lotSize) * 10 ** baseAtoms);
+      const amount = Math.round(
+        (Number(stakeValue) / lotSize) * 10 ** baseAtoms
+      );
       liquidateParams.amount = amount;
     }
-    console.log('PARAMS', liquidateParams);
-    let signature = '';
+    console.log("PARAMS", liquidateParams);
+    let signature = "";
     fetch(`${DUAL_API_MAINNET}/orders/liquidateso`, {
-      method: 'post',
+      method: "post",
       // eslint-disable-next-line @typescript-eslint/naming-convention
-      headers: { 'Content-Type': 'application/json' },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(liquidateParams),
     })
       .then(async (data) => {
         const buffer = await data.json();
-        const recoveredTransaction = Transaction.from(Buffer.from(buffer, 'base64'));
+        const recoveredTransaction = Transaction.from(
+          Buffer.from(buffer, "base64")
+        );
         // @ts-ignore
         const signedTx = await wallet.signTransaction(recoveredTransaction);
-        signature = await connection.sendRawTransaction(signedTx.serialize(), { skipPreflight: true });
+        signature = await connection.sendRawTransaction(signedTx.serialize(), {
+          skipPreflight: true,
+        });
         console.log("signature:", signature);
         await queryClient.invalidateQueries(["balance/so", wallet.publicKey]);
         await queryClient.invalidateQueries([
@@ -144,7 +153,8 @@ function BalanceDetails() {
   }, [soBalanceDetails, stakeValue, connection, wallet, name]);
 
   const step = useMemo(() => {
-    if (soBalanceDetails) return soBalanceDetails.lotSize / 10 ** soBalanceDetails.baseAtoms;
+    if (soBalanceDetails)
+      return soBalanceDetails.lotSize / 10 ** soBalanceDetails.baseAtoms;
   }, [soBalanceDetails]);
   const isDisabled = useMemo(() => {
     const value = parseFloat(stakeValue);
