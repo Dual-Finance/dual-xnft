@@ -23,7 +23,7 @@ jobs:
           cache: "yarn"
       - run: yarn install --frozen-lockfile
       - run: yarn bundle
-        with:
+        env:
           VITE_RPC_URL_MAINNET: ${{ secrets.VITE_RPC_URL_MAINNET }}
       - uses: actions/upload-artifact@v3
         with:
