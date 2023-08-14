@@ -2,7 +2,7 @@
   "kind": "app",
   "storage": "aws",
   "name": "Dual Finance",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "description": "Incentive Liquidity Infrastructure",
   "website": "https://dual.finance",
   "tag": "defi",
