@@ -30,48 +30,54 @@ export async function fetchGso(connection: Connection) {
   const stakingOptions = new StakingOptions(connection.rpcEndpoint);
   const gsos = await gsoClient.getGsos();
   const params: GsoParams[] = await Promise.all(
-    gsos.map(async (gsoParam) => {
-      const {
-        projectName,
-        lockupRatioTokensPerMillion,
-        subscriptionPeriodEnd,
-        optionExpiration,
-        baseMint,
-        quoteMint,
-        strike,
-        lotSize,
-      } = gsoParam;
-      const lockupRatio = lockupRatioTokensPerMillion / 1000000;
-      const stakeTimeRemainingMs = subscriptionPeriodEnd * 1000 - Date.now();
-      const timeLeft = msToTimeLeft(stakeTimeRemainingMs);
+    gsos
+      .filter(({ projectName }) => {
+        const isTesting = projectName === "DUAL-Lockup-1";
+        return !isTesting;
+      })
+      .map(async (gsoParam) => {
+        const {
+          projectName,
+          lockupRatioTokensPerMillion,
+          subscriptionPeriodEnd,
+          optionExpiration,
+          baseMint,
+          quoteMint,
+          strike,
+          lotSize,
+        } = gsoParam;
+        const lockupRatio = lockupRatioTokensPerMillion / 1000000;
+        const stakeTimeRemainingMs = subscriptionPeriodEnd * 1000 - Date.now();
+        const timeLeft = msToTimeLeft(stakeTimeRemainingMs);
 
-      const [tokenJson, baseToken, quoteToken, optionMint] = await Promise.all([
-        fetchTokenMetadata(connection, baseMint),
-        fetchMint(connection, baseMint),
-        fetchMint(connection, quoteMint),
-        stakingOptions.soMint(strike, "GSO" + projectName, baseMint),
-      ]);
+        const [tokenJson, baseToken, quoteToken, optionMint] =
+          await Promise.all([
+            fetchTokenMetadata(connection, baseMint),
+            fetchMint(connection, baseMint),
+            fetchMint(connection, quoteMint),
+            stakingOptions.soMint(strike, "GSO" + projectName, baseMint),
+          ]);
 
-      const strikeInUSD =
-        (strike / (10 ** quoteToken.decimals * lotSize)) *
-        10 ** baseToken.decimals;
-      return {
-        lockupRatio,
-        lotSize: gsoParam.lotSize,
-        soName: projectName,
-        subscription: timeLeft,
-        subscriptionInt: subscriptionPeriodEnd,
-        expiration: convertUnixTimestamp(optionExpiration),
-        expirationInt: optionExpiration,
-        strike: strikeInUSD,
-        base: baseMint,
-        baseAtoms: baseToken.decimals,
-        option: optionMint,
-        gsoStatePk: gsoParam.gsoStatePk,
-        soStatePk: gsoParam.stakingOptionsState,
-        metadata: tokenJson,
-      };
-    })
+        const strikeInUSD =
+          (strike / (10 ** quoteToken.decimals * lotSize)) *
+          10 ** baseToken.decimals;
+        return {
+          lockupRatio,
+          lotSize: gsoParam.lotSize,
+          soName: projectName,
+          subscription: timeLeft,
+          subscriptionInt: subscriptionPeriodEnd,
+          expiration: convertUnixTimestamp(optionExpiration),
+          expirationInt: optionExpiration,
+          strike: strikeInUSD,
+          base: baseMint,
+          baseAtoms: baseToken.decimals,
+          option: optionMint,
+          gsoStatePk: gsoParam.gsoStatePk,
+          soStatePk: gsoParam.stakingOptionsState,
+          metadata: tokenJson,
+        };
+      })
   );
   return params;
 }
