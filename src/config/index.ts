@@ -15,10 +15,10 @@ export const NUM_SPL_ATOMS_PER_TOKEN: Record<string, number> = {
 };
 
 export const PK_TO_ASSET: Record<string, string> = {
-  [USDC_MINT_MAINNET]: 'USDC',
-  [BONK_MINT_MAINNET]: 'BONK',
-  [DUAL_MINT_MAINNET]: 'DUAL',
-  LSO: 'LSO',
+  [USDC_MINT_MAINNET]: "USDC",
+  [BONK_MINT_MAINNET]: "BONK",
+  [DUAL_MINT_MAINNET]: "DUAL",
+  LSO: "LSO",
 };
 
 export const SO_LIQ_LIST = [
