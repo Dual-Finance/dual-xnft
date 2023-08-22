@@ -4,7 +4,7 @@ import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { getAssociatedTokenAddress } from "@solana/spl-token";
 import { GSO, GSO_PK } from "@dual-finance/gso";
 import { StakingOptions } from "@dual-finance/staking-options";
-import { GSO_STATE_SIZE } from "../config";
+import { GSO_STATE_SIZE, PK_TO_ASSET } from "../config";
 import {
   getMultipleTokenAccounts,
   fetchTokenMetadata,
@@ -89,8 +89,7 @@ export async function fetchGsoBalance(
       let lotSize = 1_000_000; // canon lot size
       let quoteAtoms = 6; // default for USDC
       let soState;
-      let strikeInUSD =
-        (strike / (10 ** quoteAtoms * lotSize)) * 10 ** baseAtoms;
+      let strikeInUSD = ((strike / lotSize) * 10 ** baseAtoms) / 1_000_000;
       try {
         soState = (await stakingOptions.getState(
           gsoName,
@@ -119,8 +118,7 @@ export async function fetchGsoBalance(
       }
       lotSize = soState.lotSize;
       const { quoteMint, strikes } = soState;
-      strikeInUSD =
-        (strikes[0] / (10 ** quoteAtoms * lotSize)) * 10 ** baseAtoms;
+      strikeInUSD = ((strike / lotSize) * 10 ** baseAtoms) / 1_000_000;
       quoteAtoms = (await fetchMint(connection, quoteMint)).decimals;
       const optionMint = await stakingOptions.soMint(
         strikes[0],
@@ -141,7 +139,11 @@ export async function fetchGsoBalance(
         gsoStatePk: acct.pubkey,
         soStatePk: stakingOptionsState,
         base: baseMint,
-        metadata: tokenJson,
+        metadata: {
+          image: "",
+          symbol: PK_TO_ASSET[baseMint.toString()],
+          ...tokenJson,
+        },
         optionMetadata: optionJson,
       };
       allBalanceParams.push(balanceParams);

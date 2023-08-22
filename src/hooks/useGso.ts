@@ -7,6 +7,7 @@ import { GSO } from "@dual-finance/gso";
 import { GsoParams } from "../types";
 import { fetchMint, fetchTokenMetadata } from "../core";
 import { convertUnixTimestamp, msToTimeLeft } from "../utils";
+import { PK_TO_ASSET } from "../config";
 
 export default function useGso() {
   const { connection } = useConnection();
@@ -75,7 +76,11 @@ export async function fetchGso(connection: Connection) {
           option: optionMint,
           gsoStatePk: gsoParam.gsoStatePk,
           soStatePk: gsoParam.stakingOptionsState,
-          metadata: tokenJson,
+          metadata: {
+            image: "",
+            symbol: PK_TO_ASSET[baseMint.toString()],
+            ...tokenJson,
+          },
         };
       })
   );

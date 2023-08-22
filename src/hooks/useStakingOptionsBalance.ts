@@ -16,7 +16,7 @@ import {
 import stakingOptionsIdl from "@dual-finance/staking-options/lib/staking_options_idl.json";
 import { useWallet } from "./useWallet";
 import { SoBalanceParams, SOState } from "../types";
-import { STAKING_OPTIONS_STATE_SIZE } from "../config";
+import { PK_TO_ASSET, STAKING_OPTIONS_STATE_SIZE } from "../config";
 import {
   getMultipleTokenAccounts,
   fetchTokenMetadata,
@@ -133,7 +133,7 @@ export async function fetchStakingOptionsBalance(
         fetchTokenMetadata(connection, soMint),
       ]);
       const strikeInUSD =
-        (strikes[0] / (10 ** quoteDecimals * lotSize)) * 10 ** baseDecimals;
+        ((strikes[0] / lotSize) * 10 ** baseDecimals) / 1_000_000;
       const soParams: SoBalanceParams = {
         soName,
         lotSize,
@@ -148,7 +148,11 @@ export async function fetchStakingOptionsBalance(
         option: soMint,
         baseAtoms: baseDecimals,
         quoteAtoms: quoteDecimals,
-        metadata: tokenJson,
+        metadata: {
+          image: "",
+          symbol: PK_TO_ASSET[baseMint.toString()],
+          ...tokenJson,
+        },
         optionMetadata: optionJson,
       };
       allStakingOptionParams.push(soParams);
