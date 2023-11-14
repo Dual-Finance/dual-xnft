@@ -12,7 +12,7 @@
     "bundle": "yarn build && npx xnft bundle"
   },
   "dependencies": {
-    "@dual-finance/gso": "^0.0.13",
+    "@dual-finance/gso": "^0.0.15",
     "@dual-finance/staking-options": "^0.0.17",
     "@headlessui/react": "^1.7.11",
     "@metaplex-foundation/mpl-token-metadata": "^2.8.3",
